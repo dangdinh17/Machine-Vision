@@ -8,16 +8,10 @@ def mkdir(dir_path):
     Args:
         dir_path (str): 目录路径
     """
-    original_dir_path = dir_path
-    suffix = 1
 
     # 循环检查目录是否存在，如果存在则添加后缀
-    while op.exists(dir_path):
-        dir_path = f"{original_dir_path}_{suffix}"
-        suffix += 1
-
-    os.makedirs(dir_path)
-    return dir_path  # 返回最终创建的目录路径
+    assert not op.exists(dir_path), ("Dir already exists!")
+    os.makedirs(dir_path)  # 返回最终创建的目录路径
 
 # ==========
 # Time

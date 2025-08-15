@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import ultralytics
 class CharbonnierLoss(torch.nn.Module):
     def __init__(self, eps=1e-6):
         super(CharbonnierLoss, self).__init__()
