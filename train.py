@@ -33,12 +33,11 @@ def receive_arg():
     opts_dict['train']['log_path'] = op.join("exp", opts_dict['train']['exp_name'], "log.log")
     opts_dict['train']['checkpoint_save_path_pre'] = op.join("exp", opts_dict['train']['exp_name'], "ckp_")
     opts_dict['train']['best_weight'] = op.join("exp", opts_dict['train']['exp_name'], "best_weight.pth")
-    opts_dict['train']['num_gpu'] = torch.cuda.device_count()
+    # opts_dict['train']['num_gpu'] = torch.cuda.device_count()
     if opts_dict['train']['num_gpu'] > 1:
         opts_dict['train']['is_dist'] = True
     else:
         opts_dict['train']['is_dist'] = False
-
     return opts_dict
 
 def main():
@@ -56,13 +55,15 @@ def main():
     # ==========
     # comet logging
     # ==========
-    previous_experiment = opts_dict['comet_logging'].pop('previous_experiment')
-    if previous_experiment:
-        experiment = ExistingExperiment(previous_experiment, **opts_dict['comet_logging'])    
-    else:
-        experiment = Experiment(**opts_dict['comet_logging']) 
+    using_comet = opts_dict['comet_logging'].pop('using')
+    if using_comet:
+        previous_experiment = opts_dict['comet_logging'].pop('previous_experiment')
+        if previous_experiment:
+            experiment = ExistingExperiment(previous_experiment, **opts_dict['comet_logging'])    
+        else:
+            experiment = Experiment(**opts_dict['comet_logging']) 
 
-    experiment.set_name(opts_dict['train']['exp_name'])
+        experiment.set_name(opts_dict['train']['exp_name'])
 
     # ==========
     # init distributed training
@@ -101,28 +102,23 @@ def main():
 
 
     # create datasets
-    train_dataset = utils.TrainDataset(opts_dict['dataset']['lr_train'],
-                                        opts_dict['dataset']['hr_train'],
-                                        opts_dict['dataset']['imgsz'],
-                                        opts_dict['dataset']['scale'],
-                                        opts_dict['dataset']['augment']  # augment=True for training
+    train_dataset = utils.TrainDataset(opts_dict['dataset']['train']['lr_train'],
+                                        opts_dict['dataset']['train']['hr_train'],
+                                        opts_dict['dataset']['train']['imgsz'],
+                                        opts_dict['dataset']['train']['scale'],
+                                        opts_dict['dataset']['train']['augment']  # augment=True for training
     )
     train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size=opts_dict['train']['batch_size_per_gpu'],
+                                               batch_size=opts_dict['dataset']['train']['batch_size_per_gpu'],
                                                shuffle=True,
     )
-    valid_dataset = utils.TrainDataset(opts_dict['dataset']['lr_val'],
-                                        opts_dict['dataset']['hr_val'],
+    valid_dataset = utils.TestDataset(opts_dict['dataset']['train']['lr_val'],
+                                        opts_dict['dataset']['train']['hr_val'],
     )
     valid_loader = torch.utils.data.DataLoader(valid_dataset,)
-
-    print(opts_dict['dataset']['train']['batch_size_per_gpu'], opts_dict['train']['num_gpu'])
     batch_size = opts_dict['dataset']['train']['batch_size_per_gpu'] * opts_dict['train']['num_gpu']  # divided by all GPUs
-    print("batch_size", batch_size)
-    batch_size = 8
-    num_iter_per_epoch = math.ceil(1000 / batch_size)
+    num_iter_per_epoch = len(train_loader)
     num_epoch = math.ceil(num_iter / num_iter_per_epoch)
-    num_epoch = 10
 
     # ==========
     # create model    ,find_unused_parameters=True
@@ -220,7 +216,7 @@ def main():
         train_loss, train_psnr = 0, 0
         training_timer.restart()
         # fetch the first batch
-        for i, (lr_images, hr_images) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch}/{num_epoch}', unit='batch')):
+        for i, (lr_images, hr_images) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')):
             # get data
             lr_images = lr_images.to(rank)
             hr_images = hr_images.to(rank)  # (B T C H W)s
@@ -241,62 +237,63 @@ def main():
             train_psnr += psnr
             
             train_step += 1
-
-            experiment.log_metric("train_loss", loss.item(), step=train_step)
-            experiment.log_metric("train_psnr", psnr, step=train_step)
+            if using_comet:
+                experiment.log_metric("train_loss", loss.item(), step=train_step)
+                experiment.log_metric("train_psnr", psnr, step=train_step)
 
             # update learning rate
-            model.eval()
-            val_loss, val_psnr = 0, 0
-            with torch.no_grad():
-                for i, (lr_images, hr_images) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
-                    lr_images = lr_images.to(rank)
-                    hr_images = hr_images.to(rank)  # (B T C H W)s
-                    
-                    enhanced = model(lr_images)
-                    loss = loss_func(enhanced, hr_images)
-            
-                    psnr = utils.calculate_psnr(enhanced, hr_images)
+        model.eval()
+        val_loss, val_psnr = 0, 0
+        with torch.no_grad():
+            for i, (lr_images, hr_images) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
+                lr_images = lr_images.to(rank)
+                hr_images = hr_images.to(rank)  # (B T C H W)s
+                
+                enhanced = model(lr_images)
+                loss = loss_func(enhanced, hr_images)
+        
+                psnr = utils.calculate_psnr(enhanced, hr_images)
 
-                    val_loss += loss.item()
-                    val_psnr += psnr
-                    val_step += 1
-
+                val_loss += loss.item()
+                val_psnr += psnr
+                val_step += 1
+                
+                if using_comet:
                     experiment.log_metric("val_loss", loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
-                    if val_step % 20 == 0:
-                        experiment.log_image(utils.concat_triplet_batch(lr_images, enhanced, hr_images), name="Comparison", step=epoch)
-                    
+                if val_step % 20 == 0:
+                    experiment.log_image(utils.concat_triplet_batch(lr_images, enhanced, hr_images), name="Comparison", step=epoch+1)
+                
+        if using_comet:
+            experiment.log_metrics({'avg_train_loss':train_loss/len(train_loader), 'avg_val_loss':val_loss/len(valid_loader)}, step=epoch+1)
+            experiment.log_metrics({'avg_train_psnr':train_psnr/len(train_loader), 'avg_val_psnr':val_psnr/len(valid_loader)}, step=epoch+1)
 
-            experiment.log_metrics({'avg_train_loss':train_loss/len(train_loader), 'avg_val_loss':val_loss/len(valid_loader)}, step=epoch)
-            experiment.log_metrics({'avg_train_psnr':train_psnr/len(train_loader), 'avg_val_psnr':val_psnr/len(valid_loader)}, step=epoch)
+        lr = optimizer.param_groups[0]['lr']
+        # Get the training time for the current iteration
+        iteration_time = training_timer.get_interval()
+        # Estimated training time for the remaining iterations
+        remaining_time = (num_iter - train_step) * iteration_time
 
-            lr = optimizer.param_groups[0]['lr']
-            # Get the training time for the current iteration
-            iteration_time = training_timer.get_interval()
-            # Estimated training time for the remaining iterations
-            remaining_time = (num_iter - train_step) * iteration_time
+        msg = (
+            f'iterator: [{train_step}]/{num_iter}, '
+            f'epoch: [{epoch+1}]/{num_epoch}, '
+            f'lr: [{lr * 1e4:.3f}]x1e-4, ' 
+            f'train loss: [{train_loss/len(train_loader):.6f}], '
+            f'train psnr: [{train_psnr/len(train_loader):.2f}], '
+            f'val loss: [{val_loss/len(valid_loader):.6f}], '
+            f'val psnr: [{val_psnr/len(valid_loader):.2f}], '
+            f'iteration time: [{iteration_time:.4f}] s'
+        )
 
-            msg = (
-                f'iterator: [{train_step}]/{num_iter}, '
-                f'epoch: [{epoch}]/{num_epoch}, '
-                f'lr: [{lr * 1e4:.3f}]x1e-4, ' 
-                f'train loss: [{train_loss/len(train_loader):.6f}], '
-                f'train psnr: [{train_psnr/len(train_loader):.2f}], '
-                f'val loss: [{val_loss/len(valid_loader):.6f}], '
-                f'val psnr: [{val_psnr/len(valid_loader):.2f}], '
-                f'iteration time: [{iteration_time:.4f}] s'
-            )
-
-            print(msg)
-            log_fp.write(msg + '\n')
+        print(msg)
+        log_fp.write(msg + '\n')
 
         if ((epoch % interval_train == 0) or (epoch == num_epoch)) and (rank == 0):
-                # save model
+            # save model
                 checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                                         f"{epoch+1}_"
                                         ".pth")
-                utils.save_checkpoint(model, optimizer, scheduler, epoch, train_step, val_step, best_loss, checkpoint_save_path)
+                utils.save_checkpoint(model, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, checkpoint_save_path)
                 # log
                 msg = "> model saved at {:s}\n".format(checkpoint_save_path)
                 print(msg)
@@ -304,7 +301,7 @@ def main():
                 log_fp.flush()
         if val_loss/len(valid_loader) < best_loss:
             best_loss = val_loss/len(valid_loader)
-            utils.save_checkpoint(model, optimizer, scheduler, epoch, train_step, val_step, best_loss, opts_dict['train']['best_weight'])
+            utils.save_checkpoint(model, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, opts_dict['train']['best_weight'])
             msg = "> model saved at {:s}\n".format(opts_dict['train']['best_weight'])
             print(msg)
             log_fp.write(msg + '\n')
