@@ -19,6 +19,8 @@ def receive_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument('--opt_path', type=str, default='train.yml', help='Path to option YAML file.')
     parser.add_argument('--local_rank', type=int, default=0, help='Distributed launcher requires.')
+    # parser.add_argument('--imgsz', type=int, default=64, help='Image size for training.')
+    # parser.add_argument('--exp_name', type=str, default='Enhancer_LR_64', help='Experiment name for logging.')
     args = parser.parse_args()
 
     with open(args.opt_path, 'r') as fp:
@@ -26,7 +28,8 @@ def receive_arg():
 
     opts_dict['opt_path'] = args.opt_path
     opts_dict['train']['rank'] = args.local_rank
-
+    # opts_dict['dataset']['train']['imgsz'] = args.imgsz
+    # opts_dict['train']['exp_name'] = args.exp_name
     if opts_dict['train']['exp_name'] is None:
         opts_dict['train']['exp_name'] = utils.get_timestr()
 
@@ -291,7 +294,7 @@ def main():
         if ((epoch % interval_train == 0) or (epoch == num_epoch)) and (rank == 0):
             # save model
                 checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
-                                        f"{epoch+1}_"
+                                        f"{epoch+1}"
                                         ".pth")
                 utils.save_checkpoint(model, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, checkpoint_save_path)
                 # log
@@ -302,7 +305,7 @@ def main():
         if val_loss/len(valid_loader) < best_loss:
             best_loss = val_loss/len(valid_loader)
             utils.save_checkpoint(model, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, opts_dict['train']['best_weight'])
-            msg = "> model saved at {:s}\n".format(opts_dict['train']['best_weight'])
+            msg = "> best model saved at {:s}\n".format(opts_dict['train']['best_weight'])
             print(msg)
             log_fp.write(msg + '\n')
             log_fp.flush()
