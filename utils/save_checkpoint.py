@@ -11,7 +11,6 @@ def save_checkpoint(model, optimizer, scheduler, epoch, train_step, test_step, b
         'best_loss': best_loss,
     }
     torch.save(checkpoint, path)
-    print(f"Checkpoint saved at {path}")
 
 def load_checkpoint(model, optimizer, scheduler, path="checkpoint.pth"):
     if os.path.isfile(path):

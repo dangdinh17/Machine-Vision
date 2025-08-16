@@ -62,7 +62,7 @@ def main():
     if using_comet:
         previous_experiment = opts_dict['comet_logging'].pop('previous_experiment')
         if previous_experiment:
-            experiment = ExistingExperiment(previous_experiment, **opts_dict['comet_logging'])    
+            experiment = ExistingExperiment(previous_experiment=previous_experiment, **opts_dict['comet_logging'])    
         else:
             experiment = Experiment(**opts_dict['comet_logging']) 
 
@@ -77,8 +77,9 @@ def main():
 
     if rank == 0:
         log_dir = op.join("exp", opts_dict['train']['exp_name'])
-        print("log_dir", log_dir)
-        utils.mkdir(log_dir)
+        if not previous_experiment:
+            print("log_dir", log_dir)
+            utils.mkdir(log_dir)
         log_fp = open(opts_dict['train']['log_path'], 'a')
 
         # log all parameters
@@ -175,6 +176,8 @@ def main():
         scheduler = utils.CosineAnnealingRestartLR(optimizer, **opts_dict['train']['scheduler'])
         opts_dict['train']['scheduler']['is_on'] = True
 
+    if op.isfile(opts_dict['train']['best_model']):
+        model.load_state_dict(torch.load(opts_dict['train']['best_model'])['model_state_dict'])
     start_epoch, train_step, val_step, best_loss = utils.load_checkpoint(model, optimizer, scheduler, path=opts_dict['train']['load_path'])
 
     # display and log
@@ -188,8 +191,9 @@ def main():
             f"start from epoch: [{start_epoch}]"
         )
         print(msg)
-        log_fp.write(msg + '\n')
-        log_fp.flush()
+        if not previous_experiment:
+            log_fp.write(msg + '\n')
+            log_fp.flush()
 
     if opts_dict['train']['is_dist']:
         torch.distributed.barrier()  # all processes wait for ending
@@ -291,7 +295,7 @@ def main():
         print(msg)
         log_fp.write(msg + '\n')
 
-        if ((epoch % interval_train == 0) or (epoch == num_epoch)) and (rank == 0):
+        if ((epoch % interval_train == 0) or (epoch + 1 == num_epoch)) and (rank == 0):
             # save model
                 checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                                         f"{epoch+1}"

@@ -3,17 +3,17 @@ dataset:
     type: PCB_dataset
 
     # for dataset
-    hr_train: /tdx/WMX/data/MFQEV2/train_108/mfqev2_train_gt_qp37_15.lmdb
-    lr_train: /tdx/WMX/data/MFQEV2/train_108/mfqev2_train_lq_qp37_15.lmdb
+    hr_train: ./dataset/40_ISRout/train/HQ
+    lr_train: ./dataset/40_ISRout/train/LQ_ISRout
 
-    hr_val: /tdx/WMX/data/MFQEV2/train_108/mfqev2_train_gt_qp37_15.lmdb
-    lr_val: /tdx/WMX/data/MFQEV2/train_108/mfqev2_train_lq_qp37_15.lmdb
+    hr_val: ./dataset/40_ISRout/test/HQ
+    lr_val: ./dataset/40_ISRout/test/LQ_ISRout
 
     meta_info_fp: log/log.txt
 
     imgsz: 64 # ground truth patch size: gt_size * gt_size
     augment: True
-    scale: 4
+    scale: 1
 
     # for datasampler
     enlarge_ratio: 300  # enlarge dataset by randomly cropping.
@@ -23,10 +23,11 @@ dataset:
     batch_size_per_gpu: 8  # bs=8, divided by 1 GPUs
 
 comet_logging:
-  previous_experiment:
-  api_key:  mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
+  using: True
+  previous_experiment: 
+  api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
-  work_space: dangdinh17
+  workspace: dangdinh17
 
 
 network:
@@ -34,12 +35,12 @@ network:
 
 train:
   num_gpu: 1
-  exp_name: Enhancer_LR_64 # default: timestr. None: ~
+  exp_name: Enhancer_ISRout_64 # default: timestr. None: ~
   random_seed: 7
-  num_iter: 4000
+  num_iter: 300000
   interval_train:  10
-  load_path: 
-
+  load_path: None
+  best_model: exp/Enhancer_LR_64/best_weight.pth
   optim:
     type: Adam
     lr: !!float 1e-4  #  #  1e-4  5e-5  # init lr of scheduler
