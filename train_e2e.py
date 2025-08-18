@@ -107,20 +107,24 @@ def main():
 
 
     # create datasets
-    train_dataset = utils.TrainDataset(opts_dict['dataset']['train']['lr_train'],
-                                        opts_dict['dataset']['train']['hr_train'],
-                                        opts_dict['dataset']['train']['imgsz'],
-                                        opts_dict['dataset']['train']['scale'],
-                                        opts_dict['dataset']['train']['augment']  # augment=True for training
+
+    train_dataset = utils.CombinedTrainDataset(opts_dict['dataset']['train']['lr_train'],
+                                                opts_dict['dataset']['train']['hr_train'],
+                                                opts_dict['dataset']['train']['label_train'],
+                                                opts_dict['dataset']['train']['augment']  # augment=True for training
     )
+        
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                batch_size=opts_dict['dataset']['train']['batch_size_per_gpu'],
                                                shuffle=True,
+                                               colate_fn=utils.collate_fn
     )
-    valid_dataset = utils.TestDataset(opts_dict['dataset']['train']['lr_val'],
-                                        opts_dict['dataset']['train']['hr_val'],
+    valid_dataset = utils.CombinedTestDataset(opts_dict['dataset']['train']['lr_val'],
+                                                opts_dict['dataset']['train']['hr_val'],
+                                                opts_dict['dataset']['train']['label_val'],
     )
-    valid_loader = torch.utils.data.DataLoader(valid_dataset,)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, colate_fn=utils.collate_fn)
+    
     batch_size = opts_dict['dataset']['train']['batch_size_per_gpu'] * opts_dict['train']['num_gpu']  # divided by all GPUs
     num_iter_per_epoch = len(train_loader)
     num_epoch = math.ceil(num_iter / num_iter_per_epoch)
@@ -243,7 +247,7 @@ def main():
         train_loss, train_psnr = 0, 0
         training_timer.restart()
         # fetch the first batch
-        for i, (lr_images, hr_images) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')):
+        for i, (lr_images, hr_images, targets) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')):
             # get data
             lr_images = lr_images.to(rank)
             hr_images = hr_images.to(rank)  # (B T C H W)s
@@ -254,7 +258,7 @@ def main():
             pred = detection(enhanced)
             
             human_loss = iqe_loss(enhanced, hr_images)
-            machine_loss = detection_loss(pred, hr_images)
+            machine_loss, _ = detection_loss(pred, targets)
             total_loss = human_loss*alpha + machine_loss*(1-alpha)
             
             iqe_optimizer.zero_grad()  # zero grad
@@ -270,12 +274,12 @@ def main():
             with torch.no_grad():
                 psnr = utils.calculate_psnr(enhanced, hr_images)
 
-            train_loss += loss.item()
+            train_loss += total_loss.item()
             train_psnr += psnr
             
             train_step += 1
             if using_comet:
-                experiment.log_metric("train_loss", loss.item(), step=train_step)
+                experiment.log_metric("train_loss", total_loss.item(), step=train_step)
                 experiment.log_metric("train_psnr", psnr, step=train_step)
 
             # update learning rate
@@ -283,22 +287,24 @@ def main():
         detection.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
-            for i, (lr_images, hr_images) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
+            for i, (lr_images, hr_images, targets) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
                 lr_images = lr_images.to(rank)
                 hr_images = hr_images.to(rank)  # (B T C H W)s
                 
                 isr_out = isr(lr_images)
                 enhanced = iqe(isr_out)
-                loss = iqe_loss(enhanced, hr_images)
-        
-                psnr = utils.calculate_psnr(enhanced, hr_images)
+                pred = detection(enhanced)    
+                    
+                human_loss = iqe_loss(enhanced, hr_images)
+                machine_loss = detection_loss(pred, targets)
+                total_loss = human_loss*alpha + machine_loss*(1-alpha)
 
-                val_loss += loss.item()
+                val_loss += total_loss.item()
                 val_psnr += psnr
                 val_step += 1
                 
                 if using_comet:
-                    experiment.log_metric("val_loss", loss.item(), step=val_step)
+                    experiment.log_metric("val_loss", total_loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
                 if val_step % 20 == 0:
                     experiment.log_image(utils.concat_triplet_batch(lr_images, enhanced, hr_images), name="Comparison", step=epoch+1)
