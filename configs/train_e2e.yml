@@ -1,0 +1,78 @@
+dataset:
+  train:  # LMDB
+    type: PCB_dataset
+
+    # for dataset
+    hr_train: ./dataset/40_e2e/train/HQ
+    lr_train: ./dataset/40_e2e/train/LQ
+
+    hr_val: ./dataset/40_e2e/test/HQ
+    lr_val: ./dataset/40_e2e/test/LQ
+
+    meta_info_fp: log/log.txt
+
+    imgsz: 128 # ground truth patch size: gt_size * gt_size
+    augment: True
+    scale: 4
+
+    # for datasampler
+    enlarge_ratio: 300  # enlarge dataset by randomly cropping.
+
+    # for dataloader   Defined in utils/deep_learning.py
+    num_worker_per_gpu: 8  # 12 in total. mainly affect IO
+    batch_size_per_gpu: 2  # bs=8, divided by 1 GPUs
+
+comet_logging:
+  using: False
+  previous_experiment: 539457571dca4dd9ac1e95538f284430
+  api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
+  project_name: cisr-project
+  workspace: dangdinh17
+
+
+network:
+  iqe_type: Enhancer_Large
+  isr_type: ESR
+  detection: YOLOv8
+
+train:
+  num_gpu: 1
+  exp_name: Enhancer_Small_Large_128 # default: timestr. None: ~
+  random_seed: 7
+  num_iter: 200000
+  interval_train:  10
+  load_path: none
+  best_iqe_model: exp/Enhancer_ISRout_64/best_weight.pth
+  best_isr_model: exp/weights/best_esr_40.pth
+  best_detection_model: exp/weights/bestyolov8.pt
+  alpha: 0.3
+  optim:
+    type: Adam
+    lr: !!float 1e-5  #  #  1e-4  5e-5  # init lr of scheduler
+    betas: [0.9, 0.999]
+    eps: !!float 1e-08
+
+  scheduler:
+    is_on: True
+    type: CosineAnnealingRestartLR
+    periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
+    restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+    eta_min: !!float 1e-7
+
+  detection_scheduler:
+      type: CosineAnnealingRestartLR
+      periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
+      restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+      eta_min: !!float 1e-5
+
+  loss:  # Defined in utils/deep_learning.py
+    #type: CharbonnierLoss
+    eps: !!float 1e-6
+    type: CharbonnierLoss
+
+
+  criterion: # Defined in utils/deep_learning.py
+    type: PSNR
+    unit: dB
+
+

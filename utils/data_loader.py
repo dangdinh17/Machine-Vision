@@ -22,9 +22,10 @@ class TrainDataset(Dataset):
         return lr_image, hr_image
     
     def transform_fn(self, lr_img, hr_img, imgsz, scale, augment=False):
-        i, j, h, w = transforms.RandomCrop.get_params(lr_img, output_size=(imgsz//scale, imgsz//scale))
-        lr_img = TF.crop(lr_img, i, j, h, w)
-        hr_img = TF.crop(hr_img, i * scale, j * scale, h * scale, w * scale)
+        if isinstance(imgsz, int):
+            i, j, h, w = transforms.RandomCrop.get_params(lr_img, output_size=(imgsz//scale, imgsz//scale))
+            lr_img = TF.crop(lr_img, i, j, h, w)
+            hr_img = TF.crop(hr_img, i * scale, j * scale, h * scale, w * scale)
         
         if augment:
             # Áp dụng cùng một phép lật ngang

@@ -204,7 +204,7 @@ class AB(nn.Module):
 
 
 class Enhancer(nn.Module):
-    def __init__(self, in_nc=3, out_nc=3,nf=64, level=2, num_blocks=[2, 4, 4]):
+    def __init__(self, in_nc=3, out_nc=3,nf=40, level=2, num_blocks=[1, 2, 2]):
         super(Enhancer, self).__init__()
         self.nf = nf
         self.level = level
@@ -293,14 +293,25 @@ class Enhancer(nn.Module):
         return out
     
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# net = Enhancer(in_nc=3, out_nc=3, nf=32).to(device)
+
+##########
+# Enhance_Large
+##########
+
+# net = Enhancer(in_nc=3, out_nc=3,nf=64, level=2, num_blocks=[2, 4, 4]):
+
+##########
+# Enhance_Small
+##########
+
+# net = Enhancer(in_nc=3, out_nc=3,nf=40, level=2, num_blocks=[1, 2, 2])
 
 # from ptflops import get_model_complexity_info
 # from torchinfo import summary
 # with torch.no_grad():
-#     input = torch.randn(1, 3, 64, 64).to(device)
+#     input = torch.randn(1, 3, 152, 152).to(device)
 #     output = net(input)
-#     # print(output.shape)
+#     print(output.shape)
 #     print(summary(net, input_size=(8, 3, 64, 64)))
 #     macs, params = get_model_complexity_info(net, (3, 64, 64), as_strings=False, print_per_layer_stat=False, verbose=False)
 #     print(f"MACs: {macs/(1e6):.2f}M, Params: {params/(1e3):.2f}K")

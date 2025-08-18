@@ -1,0 +1,68 @@
+dataset:
+  train:  # LMDB
+    type: PCB_dataset
+
+    # for dataset
+    hr_train: ./dataset/40_ISRout/train/HQ
+    lr_train: ./dataset/40_ISRout/train/LQ_ISRout
+    hr_val: ./dataset/40_ISRout/test/HQ
+    lr_val: ./dataset/40_ISRout/test/LQ_ISRout
+
+    meta_info_fp: log/log.txt
+
+    imgsz: 64 # ground truth patch size: gt_size * gt_size
+    augment: True
+    scale: 1
+
+    # for datasampler
+    enlarge_ratio: 300  # enlarge dataset by randomly cropping.
+
+    # for dataloader   Defined in utils/deep_learning.py
+    num_worker_per_gpu: 8  # 12 in total. mainly affect IO
+    batch_size_per_gpu: 8  # bs=8, divided by 1 GPUs
+
+comet_logging:
+  using: True
+  previous_experiment: False
+  api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
+  project_name: cisr-project
+  workspace: dangdinh17
+
+
+network:
+  iqe_type: Enhancer_Small
+  isr_type: ESR
+  detection: YOLOv8
+
+train:
+  num_gpu: 1
+  exp_name: Enhancer_Small_ISRout_64 # default: timestr. None: ~
+  random_seed: 7
+  num_iter: 300000
+  interval_train:  10
+  load_path: None
+  best_model: None
+  optim:
+    type: Adam
+    lr: !!float 1e-4  #  #  1e-4  5e-5  # init lr of scheduler
+    betas: [0.9, 0.999]
+    eps: !!float 1e-08
+
+  scheduler:
+    is_on: True
+    type: CosineAnnealingRestartLR
+    periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
+    restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+    eta_min: !!float 1e-7
+
+  loss:  # Defined in utils/deep_learning.py
+    #type: CharbonnierLoss
+    eps: !!float 1e-6
+    type: CharbonnierLoss
+
+
+  criterion: # Defined in utils/deep_learning.py
+    type: PSNR
+    unit: dB
+
+

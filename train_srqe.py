@@ -17,7 +17,7 @@ from comet_ml import Experiment, ExistingExperiment
 
 def receive_arg():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--opt_path', type=str, default='configs/train.yml', help='Path to option YAML file.')
+    parser.add_argument('--opt_path', type=str, default='configs/train_e2e.yml', help='Path to option YAML file.')
     parser.add_argument('--local_rank', type=int, default=0, help='Distributed launcher requires.')
     # parser.add_argument('--imgsz', type=int, default=64, help='Image size for training.')
     # parser.add_argument('--exp_name', type=str, default='Enhancer_LR_64', help='Experiment name for logging.')
@@ -67,7 +67,7 @@ def main():
             experiment = Experiment(**opts_dict['comet_logging']) 
 
         experiment.set_name(opts_dict['train']['exp_name'])
-        
+
     # ==========
     # init distributed training
     # ==========
@@ -128,14 +128,19 @@ def main():
     # create model    ,find_unused_parameters=True
     # ==========
     if opts_dict['network']['iqe_type']=='Enhancer_Small':
-        model = Enhancer(in_nc=3, out_nc=3,nf=40, level=2, num_blocks=[1, 2, 2])
+        iqe = Enhancer(in_nc=3, out_nc=3,nf=40, level=2, num_blocks=[1, 2, 2])
     elif opts_dict['network']['iqe_type']=='Enhancer_Large':
-        model = Enhancer(in_nc=3, out_nc=3,nf=64, level=2, num_blocks=[2, 4, 4])
+        iqe = Enhancer(in_nc=3, out_nc=3,nf=64, level=2, num_blocks=[2, 4, 4])
     else:
-        model = SwinIR()
-    model = model.to(rank)
-    if opts_dict['train']['is_dist']:
-        model = DDP(model, device_ids=[rank], find_unused_parameters=True)
+        iqe = SwinIR()
+        
+    if opts_dict['network']['isr_type'] == 'ESR':
+        isr = ESR(scale_factor=4, use_canny=True)
+        
+    iqe = iqe.to(rank)
+    isr = isr.to(rank)
+    # if opts_dict['train']['is_dist']:
+    #     model = DDP(model, device_ids=[rank], find_unused_parameters=True)
 
     # # # # load pre-trained generator
     # ckp_path = opts_dict['train']['load_path']
@@ -169,7 +174,7 @@ def main():
 
     # define optimizer
     assert opts_dict['train']['optim'].pop('type') == 'Adam', "Not implemented."
-    optimizer = optim.Adam(model.parameters(), **opts_dict['train']['optim'])
+    optimizer = optim.Adam(iqe.parameters(), **opts_dict['train']['optim'])
 
     # define scheduler
     if opts_dict['train']['scheduler']['is_on']:
@@ -178,9 +183,11 @@ def main():
         scheduler = utils.CosineAnnealingRestartLR(optimizer, **opts_dict['train']['scheduler'])
         opts_dict['train']['scheduler']['is_on'] = True
 
-    if op.isfile(opts_dict['train']['best_model']):
-        model.load_state_dict(torch.load(opts_dict['train']['best_model'])['model_state_dict'])
-    start_epoch, train_step, val_step, best_loss = utils.load_checkpoint(model, optimizer, scheduler, path=opts_dict['train']['load_path'])
+    if op.isfile(opts_dict['train']['best_iqe_model']):
+        iqe.load_state_dict(torch.load(opts_dict['train']['best_iqe_model'])['model_state_dict'])
+    if op.isfile(opts_dict['train']['best_isr_model']):
+        isr.load_state_dict(torch.load(opts_dict['train']['best_isr_model'])['model_state_dict'])
+    start_epoch, train_step, val_step, best_loss = utils.load_checkpoint(iqe, optimizer, scheduler, path=opts_dict['train']['load_path'])
 
     # display and log
     if rank == 0:
@@ -217,9 +224,9 @@ def main():
 
     
     # num_iter_accum = start_iter
-
+    isr.eval()
     for epoch in range(start_epoch, num_epoch):
-        model.train()
+        iqe.train()
         # if opts_dict['train']['is_dist']:
         #     train_sampler.set_epoch(current_epoch)
         train_loss, train_psnr = 0, 0
@@ -230,7 +237,9 @@ def main():
             lr_images = lr_images.to(rank)
             hr_images = hr_images.to(rank)  # (B T C H W)s
             
-            enhanced = model(lr_images)
+            with torch.no_grad():
+                isr_out = isr(lr_images)
+            enhanced = iqe(isr_out)
             loss = loss_func(enhanced, hr_images)
             
             optimizer.zero_grad()  # zero grad
@@ -251,14 +260,15 @@ def main():
                 experiment.log_metric("train_psnr", psnr, step=train_step)
 
             # update learning rate
-        model.eval()
+        iqe.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
             for i, (lr_images, hr_images) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
                 lr_images = lr_images.to(rank)
                 hr_images = hr_images.to(rank)  # (B T C H W)s
                 
-                enhanced = model(lr_images)
+                isr_out = isr(lr_images)
+                enhanced = iqe(isr_out)
                 loss = loss_func(enhanced, hr_images)
         
                 psnr = utils.calculate_psnr(enhanced, hr_images)
@@ -303,7 +313,7 @@ def main():
                 checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                                         f"{epoch+1}"
                                         ".pth")
-                utils.save_checkpoint(model, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, checkpoint_save_path)
+                utils.save_checkpoint(iqe, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, checkpoint_save_path)
                 # log
                 msg = "> model saved at {:s}\n".format(checkpoint_save_path)
                 print(msg)
@@ -311,7 +321,7 @@ def main():
                 log_fp.flush()
         if val_loss/len(valid_loader) < best_loss:
             best_loss = val_loss/len(valid_loader)
-            utils.save_checkpoint(model, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, opts_dict['train']['best_weight'])
+            utils.save_checkpoint(iqe, optimizer, scheduler, epoch+1, train_step, val_step, best_loss, opts_dict['train']['best_weight'])
             msg = "> best model saved at {:s}\n".format(opts_dict['train']['best_weight'])
             print(msg)
             log_fp.write(msg + '\n')
