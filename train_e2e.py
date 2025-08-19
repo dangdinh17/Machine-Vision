@@ -10,10 +10,12 @@ import utils
 from collections import OrderedDict
 from models import *
 from tqdm import tqdm
+from pathlib import Path
 from comet_ml import Experiment, ExistingExperiment
 from ultralytics.nn.tasks import DetectionModel
 from ultralytics.utils.loss import v8DetectionLoss
-
+from ultralytics.utils.metrics import DetMetrics
+from ultralytics.utils import ops
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def receive_arg():
@@ -117,13 +119,13 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                batch_size=opts_dict['dataset']['train']['batch_size_per_gpu'],
                                                shuffle=True,
-                                               colate_fn=utils.collate_fn
+                                               collate_fn=utils.collate_fn
     )
     valid_dataset = utils.CombinedTestDataset(opts_dict['dataset']['train']['lr_val'],
                                                 opts_dict['dataset']['train']['hr_val'],
                                                 opts_dict['dataset']['train']['label_val'],
     )
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, colate_fn=utils.collate_fn)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, collate_fn=utils.collate_fn)
     
     batch_size = opts_dict['dataset']['train']['batch_size_per_gpu'] * opts_dict['train']['num_gpu']  # divided by all GPUs
     num_iter_per_epoch = len(train_loader)
@@ -281,12 +283,15 @@ def main():
             if using_comet:
                 experiment.log_metric("train_loss", total_loss.item(), step=train_step)
                 experiment.log_metric("train_psnr", psnr, step=train_step)
+                experiment.log_metric("train_human_loss", human_loss.item(), step=train_step)
+                experiment.log_metric("train_machine_loss", machine_loss.item(), step=train_step)
 
             # update learning rate
         iqe.eval()
         detection.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
+            metrics = DetMetrics(save_dir=Path(op.join("exp", opts_dict['train']['exp_name'])))
             for i, (lr_images, hr_images, targets) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
                 lr_images = lr_images.to(rank)
                 hr_images = hr_images.to(rank)  # (B T C H W)s
@@ -299,19 +304,37 @@ def main():
                 machine_loss = detection_loss(pred, targets)
                 total_loss = human_loss*alpha + machine_loss*(1-alpha)
 
+                with torch.no_grad():
+                    psnr = utils.calculate_psnr(enhanced, hr_images)
+
                 val_loss += total_loss.item()
                 val_psnr += psnr
                 val_step += 1
-                
+
+                preds_for_metric = ops.non_max_suppression(pred[0],
+                                                           conf_thres=0.001, # low conf for mAP
+                                                           iou_thres=0.6,
+                                                           agnostic=False,
+                                                           max_det=300,
+                                                           nc=detection.nc)
+                metrics.process(preds_for_metric, targets)
+
                 if using_comet:
                     experiment.log_metric("val_loss", total_loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
                 if val_step % 20 == 0:
                     experiment.log_image(utils.concat_triplet_batch(lr_images, enhanced, hr_images), name="Comparison", step=epoch+1)
-                
+        
+        results_dict = metrics.results_dict
         if using_comet:
             experiment.log_metrics({'avg_train_loss':train_loss/len(train_loader), 'avg_val_loss':val_loss/len(valid_loader)}, step=epoch+1)
             experiment.log_metrics({'avg_train_psnr':train_psnr/len(train_loader), 'avg_val_psnr':val_psnr/len(valid_loader)}, step=epoch+1)
+            experiment.log_metrics({
+                "val_precision": results_dict['metrics/precision(B)'],
+                "val_recall": results_dict['metrics/recall(B)'],
+                "val_map50": results_dict['metrics/mAP50(B)'],
+                "val_map50_95": results_dict['metrics/mAP50-95(B)']
+            }, step=epoch+1)
 
         lr = iqe_optimizer.param_groups[0]['lr']
         # Get the training time for the current iteration
@@ -327,6 +350,10 @@ def main():
             f'train psnr: [{train_psnr/len(train_loader):.2f}], '
             f'val loss: [{val_loss/len(valid_loader):.6f}], '
             f'val psnr: [{val_psnr/len(valid_loader):.2f}], '
+            f"P: [{results_dict['metrics/precision(B)']:.3f}], "
+            f"R: [{results_dict['metrics/recall(B)']:.3f}], "
+            f"mAP50: [{results_dict['metrics/mAP50(B)']:.3f}], "
+            f"mAP50-95: [{results_dict['metrics/mAP50-95(B)']:.3f}], "
             f'iteration time: [{iteration_time:.4f}] s'
         )
 
