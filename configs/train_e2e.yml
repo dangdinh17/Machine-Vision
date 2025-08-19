@@ -5,9 +5,11 @@ dataset:
     # for dataset
     hr_train: ./dataset/40_e2e/train/HQ
     lr_train: ./dataset/40_e2e/train/LQ
+    label_train: ./dataset/40_e2e/train/labels
 
     hr_val: ./dataset/40_e2e/test/HQ
     lr_val: ./dataset/40_e2e/test/LQ
+    label_val: ./dataset/40_e2e/test/labels
 
     meta_info_fp: log/log.txt
 
@@ -24,7 +26,7 @@ dataset:
 
 comet_logging:
   using: False
-  previous_experiment: 539457571dca4dd9ac1e95538f284430
+  previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
   workspace: dangdinh17

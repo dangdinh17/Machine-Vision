@@ -1,6 +1,6 @@
 from .calculate_psnr_ssim import calculate_psnr_ssim, calculate_psnr
 from .loss import CharbonnierLoss
-from .data_loader import TrainDataset, TestDataset
+from .data_loader import TrainDataset, TestDataset, CombinedTestDataset, CombinedTrainDataset, collate_fn
 from .save_checkpoint import save_checkpoint, load_checkpoint
 from .deep_learning import set_random_seed, init_dist, get_dist_info, DistSampler, create_dataloader, FFTCharbonnierLoss, PSNR
 from .lr_schedule import StepLRScheduler, CosineAnnealingRestartLR
@@ -11,7 +11,7 @@ from .comet import concat_triplet_batch, tensor_batch_to_pil
 __all__ = [
     "calculate_psnr_ssim", "calculate_psnr",
     "CharbonnierLoss",
-    "TrainDataset", "TestDataset",
+    "TrainDataset", "TestDataset", "CombinedTestDataset", "CombinedTrainDataset", "collate_fn",
     "save_checkpoint",
     "load_checkpoint",
     'set_random_seed', 'init_dist', 'get_dist_info', 'DistSampler', 'create_dataloader', 'CharbonnierLoss', 'FFTCharbonnierLoss', 'PSNR',
