@@ -5,15 +5,12 @@ dataset:
     # for dataset
     hr_train: ./dataset/40_e2e/train/HQ
     lr_train: ./dataset/40_e2e/train/LQ
-    label_train: ./dataset/40_e2e/train/labels
-
     hr_val: ./dataset/40_e2e/test/HQ
     lr_val: ./dataset/40_e2e/test/LQ
-    label_val: ./dataset/40_e2e/test/labels
 
     meta_info_fp: log/log.txt
 
-    imgsz: 128 # ground truth patch size: gt_size * gt_size
+    imgsz: 152 # ground truth patch size: gt_size * gt_size
     augment: True
     scale: 4
 
@@ -25,7 +22,7 @@ dataset:
     batch_size_per_gpu: 1  # bs=8, divided by 1 GPUs
 
 comet_logging:
-  using: False
+  using: True
   previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
@@ -39,7 +36,7 @@ network:
 
 train:
   num_gpu: 1
-  exp_name: Enhancer_Small_e2e_64 # default: timestr. None: ~
+  exp_name: Enhancer_Small_SRQE_64 # default: timestr. None: ~
   random_seed: 7
   num_iter: 200000
   interval_train:  10
@@ -56,12 +53,7 @@ train:
     3: short
     4: open_circuit
     5: spurious_copper
-    # - mouse_bite
-    # - spur
-    # - missing_hole
-    # - short
-    # - open_circuit
-    # - spurious_copper
+
   optim:
     type: Adam
     lr: !!float 1e-5  #  #  1e-4  5e-5  # init lr of scheduler

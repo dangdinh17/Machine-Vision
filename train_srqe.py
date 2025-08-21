@@ -17,7 +17,7 @@ from comet_ml import Experiment, ExistingExperiment
 
 def receive_arg():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--opt_path', type=str, default='configs/train_e2e.yml', help='Path to option YAML file.')
+    parser.add_argument('--opt_path', type=str, default='configs/train_srqe.yml', help='Path to option YAML file.')
     parser.add_argument('--local_rank', type=int, default=0, help='Distributed launcher requires.')
     # parser.add_argument('--imgsz', type=int, default=64, help='Image size for training.')
     # parser.add_argument('--exp_name', type=str, default='Enhancer_LR_64', help='Experiment name for logging.')

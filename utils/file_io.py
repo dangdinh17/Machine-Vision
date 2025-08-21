@@ -156,7 +156,7 @@ def dict2str(input_dict, indent=0):
             msg += dict2str(v, indent+2)
             msg += indent_msg + '  ]\n'
         else:  # the last level
-            msg += indent_msg + k + ': ' + str(v) + '\n'
+            msg += indent_msg + str(k) + ': ' + str(v) + '\n'
     return msg
 
 # ==========

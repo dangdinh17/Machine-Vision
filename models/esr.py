@@ -58,7 +58,7 @@ class SobelFilterOpenCV(nn.Module):
     def get_output_channels(self, input_channels):
         return input_channels  # Sobel filter giữ nguyên số kênh đầu vào
 class ESR(nn.Module):
-    def __init__(self, num_channels=3, scale_factor=4, use_canny=False, use_sobel=False):
+    def __init__(self, num_channels=3, scale_factor=4, use_canny=True, use_sobel=False):
         super(ESR, self).__init__()
         self.scale_factor = scale_factor
         self.use_canny = use_canny

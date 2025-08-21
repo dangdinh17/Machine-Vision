@@ -16,11 +16,16 @@ from ultralytics.nn.tasks import DetectionModel
 from ultralytics.utils.loss import v8DetectionLoss
 from ultralytics.utils.metrics import DetMetrics
 from ultralytics.utils import ops
+import ultralytics
+from types import SimpleNamespace
+import numpy as np
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
+
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def receive_arg():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--opt_path', type=str, default='configs/train.yml', help='Path to option YAML file.')
+    parser.add_argument('--opt_path', type=str, default='configs/train_e2e.yml', help='Path to option YAML file.')
     parser.add_argument('--local_rank', type=int, default=0, help='Distributed launcher requires.')
     # parser.add_argument('--imgsz', type=int, default=64, help='Image size for training.')
     # parser.add_argument('--exp_name', type=str, default='Enhancer_LR_64', help='Experiment name for logging.')
@@ -38,7 +43,9 @@ def receive_arg():
 
     opts_dict['train']['log_path'] = op.join("exp", opts_dict['train']['exp_name'], "log.log")
     opts_dict['train']['checkpoint_save_path_pre'] = op.join("exp", opts_dict['train']['exp_name'], "ckp_")
-    opts_dict['train']['best_weight'] = op.join("exp", opts_dict['train']['exp_name'], "best_weight.pth")
+    opts_dict['train']['best_iqe_weight'] = op.join("exp", opts_dict['train']['exp_name'], "best_iqe_weight.pth")
+    opts_dict['train']['best_detection_weight'] = op.join("exp", opts_dict['train']['exp_name'], "best_detection_weight.pth")
+
     # opts_dict['train']['num_gpu'] = torch.cuda.device_count()
     if opts_dict['train']['num_gpu'] > 1:
         opts_dict['train']['is_dist'] = True
@@ -62,8 +69,9 @@ def main():
     # comet logging
     # ==========
     using_comet = opts_dict['comet_logging'].pop('using')
+    previous_experiment = opts_dict['comet_logging'].pop('previous_experiment')
+
     if using_comet:
-        previous_experiment = opts_dict['comet_logging'].pop('previous_experiment')
         if previous_experiment:
             experiment = ExistingExperiment(previous_experiment=previous_experiment, **opts_dict['comet_logging'])    
         else:
@@ -144,8 +152,13 @@ def main():
     if opts_dict['network']['isr_type'] == 'ESR':
         isr = ESR()
     if opts_dict['network']['detection'] == 'YOLOv8':
-        detection = DetectionModel("yolov8n.yaml")
-    
+        yolo = ultralytics.YOLO(opts_dict['train']['best_detection_model'])
+        detection = yolo.model
+        print(yolo.model)
+        extra_args = {
+           'box': 7.5, 'cls': 0.5, 'dfl': 1.5,
+        }
+        detection.args.update(extra_args)
     iqe = iqe.to(rank)
     isr = isr.to(rank)
     detection = detection.to(rank)
@@ -181,6 +194,11 @@ def main():
     assert opts_dict['train']['loss'].pop('type') == 'CharbonnierLoss', "Not implemented."
     iqe_loss = utils.CharbonnierLoss()
     detection_loss = v8DetectionLoss(detection)
+
+    # ép self.hyp trong loss thành namespace thay vì dict
+    if isinstance(detection_loss.hyp, dict):
+        detection_loss.hyp = SimpleNamespace(**detection_loss.hyp)
+        
     alpha = opts_dict['train']['alpha']  # alpha for human loss
     # define optimizer
     assert opts_dict['train']['optim'].pop('type') == 'Adam', "Not implemented."
@@ -200,11 +218,10 @@ def main():
         iqe.load_state_dict(torch.load(opts_dict['train']['best_iqe_model'])['model_state_dict'])
     if op.isfile(opts_dict['train']['best_isr_model']):
         isr.load_state_dict(torch.load(opts_dict['train']['best_isr_model'])['model_state_dict'])
-    if op.isfile(opts_dict['train']['best_detection_model']):
-        detection.load(opts_dict['train']['best_detection_model'])
+    
         
-    start_epoch, train_step, val_step, best_loss = utils.load_checkpoint(iqe, iqe_optimizer, human_scheduler, path=opts_dict['train']['load_path'])
-
+    start_epoch, train_step, val_step, best_map = utils.load_checkpoint(iqe, iqe_optimizer, human_scheduler, path=opts_dict['train']['load_path'])
+    best_map = 0 if best_map==float('inf') else best_map
     # display and log
     if rank == 0:
         msg = (
@@ -212,7 +229,6 @@ def main():
             f"total iters: [{num_iter}]\n"
             f"total epochs: [{num_epoch}]\n"
             f"iter per epoch: [{num_iter_per_epoch}]\n"
-            # f"start from iter: [{start_iter}]\n"
             f"start from epoch: [{start_epoch}]"
         )
         print(msg)
@@ -243,12 +259,12 @@ def main():
     isr.eval()
     for epoch in range(start_epoch, num_epoch):
         iqe.train()
-        detection.model.train()
+        detection.train()
         # if opts_dict['train']['is_dist']:
         #     train_sampler.set_epoch(current_epoch)
         train_loss, train_psnr = 0, 0
         training_timer.restart()
-        # fetch the first batch
+        # # # # fetch the first batch
         for i, (lr_images, hr_images, targets) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')):
             # get data
             lr_images = lr_images.to(rank)
@@ -258,10 +274,11 @@ def main():
                 isr_out = isr(lr_images)
             enhanced = iqe(isr_out)
             pred = detection(enhanced)
-            
+            batch = {"img": enhanced, **targets}
+
             human_loss = iqe_loss(enhanced, hr_images)
-            machine_loss, _ = detection_loss(pred, targets)
-            total_loss = human_loss*alpha + machine_loss*(1-alpha)
+            machine_loss, _ = detection_loss(pred, batch)
+            total_loss = human_loss * alpha + machine_loss.sum() * (1 - alpha)
             
             iqe_optimizer.zero_grad()  # zero grad
             detection_optimizer.zero_grad()
@@ -286,24 +303,28 @@ def main():
                 experiment.log_metric("train_human_loss", human_loss.item(), step=train_step)
                 experiment.log_metric("train_machine_loss", machine_loss.item(), step=train_step)
 
-            # update learning rate
+        # # # update learning rate
         iqe.eval()
         detection.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
-            metrics = DetMetrics(save_dir=Path(op.join("exp", opts_dict['train']['exp_name'])))
-            for i, (lr_images, hr_images, targets) in enumerate(tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch')):
+            metrics = MeanAveragePrecision(iou_thresholds=[0.5], iou_type="bbox", class_metrics=True)
+            # metrics = DetMetrics(save_dir='.', plot=False, names=opts_dict['train']['name_classes'])  # Thay detection.names bằng tên classes
+
+            pbar = tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch', leave=False)
+            for i, (lr_images, hr_images, labels) in enumerate(pbar):
                 lr_images = lr_images.to(rank)
                 hr_images = hr_images.to(rank)  # (B T C H W)s
                 
                 isr_out = isr(lr_images)
                 enhanced = iqe(isr_out)
                 pred = detection(enhanced)    
-                    
+                batch = {"img": enhanced, **labels}
+        
                 human_loss = iqe_loss(enhanced, hr_images)
-                machine_loss = detection_loss(pred, targets)
-                total_loss = human_loss*alpha + machine_loss*(1-alpha)
-
+                machine_loss, _ = detection_loss(pred, batch)
+                total_loss = human_loss * alpha + machine_loss.sum() * (1 - alpha)
+                    
                 with torch.no_grad():
                     psnr = utils.calculate_psnr(enhanced, hr_images)
 
@@ -311,29 +332,31 @@ def main():
                 val_psnr += psnr
                 val_step += 1
 
-                preds_for_metric = ops.non_max_suppression(pred[0],
-                                                           conf_thres=0.001, # low conf for mAP
-                                                           iou_thres=0.6,
+                preds_for_metric = ops.non_max_suppression(pred,
+                                                           conf_thres=0.25, # low conf for mAP
+                                                           iou_thres=0.5,
                                                            agnostic=False,
                                                            max_det=300,
-                                                           nc=detection.nc)
-                metrics.process(preds_for_metric, targets)
+                                                           nc=opts_dict['train']['num_classes'])
+                predictions, targets = utils.post_process(preds_for_metric, labels, 608, 608)             
+                # print(f'pred: {predictions}\nlabels: {targets}')
+
+                metrics.update(predictions, targets)
 
                 if using_comet:
                     experiment.log_metric("val_loss", total_loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
-                if val_step % 20 == 0:
-                    experiment.log_image(utils.concat_triplet_batch(lr_images, enhanced, hr_images), name="Comparison", step=epoch+1)
+                    if val_step % 20 == 0:
+                        experiment.log_image(utils.concat_triplet_batch(lr_images, enhanced, hr_images), name="Comparison", step=epoch+1)
         
-        results_dict = metrics.results_dict
+        results = metrics.compute()
+
         if using_comet:
             experiment.log_metrics({'avg_train_loss':train_loss/len(train_loader), 'avg_val_loss':val_loss/len(valid_loader)}, step=epoch+1)
             experiment.log_metrics({'avg_train_psnr':train_psnr/len(train_loader), 'avg_val_psnr':val_psnr/len(valid_loader)}, step=epoch+1)
             experiment.log_metrics({
-                "val_precision": results_dict['metrics/precision(B)'],
-                "val_recall": results_dict['metrics/recall(B)'],
-                "val_map50": results_dict['metrics/mAP50(B)'],
-                "val_map50_95": results_dict['metrics/mAP50-95(B)']
+                "val_map50": results['map'],
+                "val_map50_95": results['map']
             }, step=epoch+1)
 
         lr = iqe_optimizer.param_groups[0]['lr']
@@ -350,10 +373,8 @@ def main():
             f'train psnr: [{train_psnr/len(train_loader):.2f}], '
             f'val loss: [{val_loss/len(valid_loader):.6f}], '
             f'val psnr: [{val_psnr/len(valid_loader):.2f}], '
-            f"P: [{results_dict['metrics/precision(B)']:.3f}], "
-            f"R: [{results_dict['metrics/recall(B)']:.3f}], "
-            f"mAP50: [{results_dict['metrics/mAP50(B)']:.3f}], "
-            f"mAP50-95: [{results_dict['metrics/mAP50-95(B)']:.3f}], "
+            f"val_map50: [{results['map_50']:.4f}] "
+            f"val_map50_95: [{results['map']:.4f}] "
             f'iteration time: [{iteration_time:.4f}] s'
         )
 
@@ -362,19 +383,23 @@ def main():
 
         if ((epoch % interval_train == 0) or (epoch + 1 == num_epoch)) and (rank == 0):
             # save model
-                checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
+                iqe_checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                                         f"{epoch+1}"
                                         ".pth")
-                utils.save_checkpoint(iqe, iqe_optimizer, human_scheduler, epoch+1, train_step, val_step, best_loss, checkpoint_save_path)
+                detection_checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
+                                        f"{epoch+1}"
+                                        ".pth")
+                utils.save_checkpoint(iqe, iqe_optimizer, human_scheduler, epoch+1, train_step, val_step, best_map, iqe_checkpoint_save_path)
+                utils.save_checkpoint(detection, detection_optimizer, machine_scheduler, epoch+1, train_step, val_step, best_map, detection_checkpoint_save_path)
                 # log
-                msg = "> model saved at {:s}\n".format(checkpoint_save_path)
+                msg = "> iqe and detection model saved at {:s}\n".format(str(epoch+1))
                 print(msg)
                 log_fp.write(msg + '\n')
                 log_fp.flush()
-        if val_loss/len(valid_loader) < best_loss:
-            best_loss = val_loss/len(valid_loader)
-            utils.save_checkpoint(iqe, iqe_optimizer, human_scheduler, epoch+1, train_step, val_step, best_loss, opts_dict['train']['best_weight'])
-            msg = "> best model saved at {:s}\n".format(opts_dict['train']['best_weight'])
+        if results['map_50'] > best_map:
+            best_map = results['map_50']
+            utils.save_checkpoint(iqe, iqe_optimizer, human_scheduler, epoch+1, train_step, val_step, best_map, opts_dict['train']['best_iqe_weight'])
+            msg = "> best model saved at {:s}\n".format(str(epoch+1))
             print(msg)
             log_fp.write(msg + '\n')
             log_fp.flush()
