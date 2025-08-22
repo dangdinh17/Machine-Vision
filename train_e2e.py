@@ -154,7 +154,8 @@ def main():
     if opts_dict['network']['detection'] == 'YOLOv8':
         yolo = ultralytics.YOLO(opts_dict['train']['best_detection_model'])
         detection = yolo.model
-        print(yolo.model)
+        detection.requires_grad_(True)
+        # print(yolo.model)
         extra_args = {
            'box': 7.5, 'cls': 0.5, 'dfl': 1.5,
         }
@@ -253,6 +254,7 @@ def main():
     # ==========
     # start training
     # ==========
+    # print(any(p.requires_grad for p in detection.parameters()))
 
     
     # num_iter_accum = start_iter
