@@ -126,12 +126,12 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                batch_size=opts_dict['dataset']['train']['batch_size_per_gpu'],
                                                shuffle=True,
-                                               collate_fn=utils.collate_fn
+                                               collate_fn=utils.yolo_collate_fn
     )
     valid_dataset = utils.YOLOTestDataset(opts_dict['dataset']['train']['hr_val'],
                                         opts_dict['dataset']['train']['label_val'],
     )
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, collate_fn=utils.collate_fn)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, collate_fn=utils.yolo_collate_fn)
     
     batch_size = opts_dict['dataset']['train']['batch_size_per_gpu'] * opts_dict['train']['num_gpu']  # divided by all GPUs
     num_iter_per_epoch = len(train_loader)
@@ -143,7 +143,7 @@ def main():
     if opts_dict['network']['detection'] == 'YOLOv8':
         yolo = ultralytics.YOLO(opts_dict['train']['best_detection_model'])
         detection = yolo.model
-        print(yolo.model)
+        # print(yolo.model)
         extra_args = {
            'box': 7.5, 'cls': 0.5, 'dfl': 1.5,
         }

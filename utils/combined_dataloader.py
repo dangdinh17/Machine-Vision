@@ -181,7 +181,7 @@ class CombinedTestDataset(Dataset):
         
         return lr_img, hr_img, torch.tensor(targets)
 
-def collate_fn(batch):
+def combined_collate_fn(batch):
     lr, hr, tlist = zip(*batch)
     lr = torch.stack(lr, 0)
     hr = torch.stack(hr, 0)

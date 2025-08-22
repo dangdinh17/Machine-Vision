@@ -127,13 +127,13 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                batch_size=opts_dict['dataset']['train']['batch_size_per_gpu'],
                                                shuffle=True,
-                                               collate_fn=utils.collate_fn
+                                               collate_fn=utils.combined_collate_fn
     )
     valid_dataset = utils.CombinedTestDataset(opts_dict['dataset']['train']['lr_val'],
                                                 opts_dict['dataset']['train']['hr_val'],
                                                 opts_dict['dataset']['train']['label_val'],
     )
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, collate_fn=utils.collate_fn)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, collate_fn=utils.combined_collate_fn)
     
     batch_size = opts_dict['dataset']['train']['batch_size_per_gpu'] * opts_dict['train']['num_gpu']  # divided by all GPUs
     num_iter_per_epoch = len(train_loader)

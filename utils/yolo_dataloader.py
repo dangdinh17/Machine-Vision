@@ -157,12 +157,11 @@ class YOLOTestDataset(Dataset):
             targets = np.zeros((0, 5), dtype=np.float32)
         
         # Convert to tensor
-        lr_img = transforms.ToTensor()(lr_img)
         img_img = transforms.ToTensor()(img_img)
         
-        return lr_img, img_img, torch.tensor(targets)
+        return img_img, torch.tensor(targets)
 
-def collate_fn(batch):
+def yolo_collate_fn(batch):
     img, tlist = zip(*batch)
     img = torch.stack(img, 0)
     cls, bboxes, batch_idx = [], [], []
