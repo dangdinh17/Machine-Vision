@@ -30,7 +30,7 @@ class YOLOTrainDataset(Dataset):
         self.img_size = 608
 
     def __len__(self):
-        return len(self.lr_files)
+        return len(self.img_files)
     
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_files[idx])
