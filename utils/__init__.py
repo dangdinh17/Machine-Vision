@@ -23,5 +23,5 @@ __all__ = [
     'import_yuv', 'write_ycbcr', 'FileClient', 'dict2str', 'CPUPrefetcher',
     'concat_triplet_batch', 'tensor_batch_to_pil',
     'yolo_to_xyxy', 'post_process',
-    "YOLOTestDataset", "YOLOTrainDataset","yolo_collate_fn", 
+    "YOLOTestDataset", "YOLOTrainDataset", "yolo_collate_fn", 
 ]

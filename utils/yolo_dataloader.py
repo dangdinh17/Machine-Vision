@@ -75,10 +75,9 @@ class YOLOTrainDataset(Dataset):
             targets = np.zeros((0, 5), dtype=np.float32)
         
         # Convert to tensor
-        lr_img = transforms.ToTensor()(lr_img)
         img_img = transforms.ToTensor()(img_img)
         
-        return lr_img, img_img, torch.tensor(targets)
+        return img_img, torch.tensor(targets)
     
     def apply_augmentations(self, img_img, boxes):
         # Random horizontal flip
