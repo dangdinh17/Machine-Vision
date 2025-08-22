@@ -39,12 +39,11 @@ network:
 
 train:
   num_gpu: 1
-  exp_name: Enhancer_Small_e2e_64 # default: timestr. None: ~
+  exp_name: YOLOv8_SRQE_fintune # default: timestr. None: ~
   random_seed: 7
   num_iter: 200000
   interval_train:  2
-  load_path: None
-  load_detection: none
+  load_path: none
   best_iqe_model: exp/Enhancer_Small_ISRout_64/best_weight.pth
   best_isr_model: exp/weights/best_esr_40.pth
   best_detection_model: exp/weights/bestyolov8.pt
