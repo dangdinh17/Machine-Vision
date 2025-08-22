@@ -66,7 +66,7 @@ class YOLOTrainDataset(Dataset):
         
         # Apply syncimgonized augmentations
         if self.augment:
-            lr_img, img_img, boxes = self.apply_augmentations(lr_img, img_img, boxes)
+            img_img, boxes = self.apply_augmentations(img_img, boxes)
         
         # Build target tensor
         if len(boxes) > 0:
@@ -80,7 +80,7 @@ class YOLOTrainDataset(Dataset):
         
         return lr_img, img_img, torch.tensor(targets)
     
-    def apply_augmentations(self,img_img, boxes):
+    def apply_augmentations(self, img_img, boxes):
         # Random horizontal flip
         if random.random() > 0.5:
             img_img = TF.hflip(img_img)
