@@ -24,3 +24,15 @@ def concat_triplet_batch(lr, iqe_out, out):
     combined.paste(out_img, (2*w,0))
     return combined
 
+def concat_triplet_yolo_batch(lr, iqe_out, out):
+    # for i in range(lr.size(0)):
+    lr_img = tensor_batch_to_pil(lr)
+    iqe_img = tensor_batch_to_pil(iqe_out)
+    out_img = tensor_batch_to_pil(out)
+    w, h = lr_img.size
+    combined = Image.new("RGB", (w*9, h*4))
+    combined.paste(lr_img, (0,0))
+    combined.paste(iqe_img, (1*w,0))
+    combined.paste(out_img, (5*w,0))
+    return combined
+
