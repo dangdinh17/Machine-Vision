@@ -25,7 +25,7 @@ dataset:
     batch_size_per_gpu: 1  # bs=8, divided by 1 GPUs
 
 comet_logging:
-  using: True
+  using: False
   previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
@@ -39,16 +39,17 @@ network:
 
 train:
   num_gpu: 1
-  exp_name: Enhancer_Small_e2e_64 # default: timestr. None: ~
+  exp_name: Enhancer_Small_e2e_FPNLoss # default: timestr. None: ~
   random_seed: 7
   num_iter: 200000
-  interval_train:  2
+  interval_train:  1
   load_path: None
-  load_detection: none
+  load_detection: exp/Enhancer_Small_e2e_64/ckp_19_detection.pth
   best_iqe_model: exp/Enhancer_Small_ISRout_64/best_weight.pth
   best_isr_model: exp/weights/best_esr_40.pth
   best_detection_model: exp/weights/bestyolov8.pt
-  alpha: 0.3
+  best_backbone: exp/FasterRCNN_ResNet18_PCB/best_backbone_49.pth
+  alpha: 0.8
   num_classes: 6
   name_classes:
     0: mouse_bite
@@ -80,6 +81,13 @@ train:
       periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
       restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
       eta_min: !!float 1e-5
+
+  detection_optim:
+    type: SGD
+    lr: !!float 0.0005  #  #  1e-4  5e-5  # init lr of scheduler
+    momentum: 0.937
+    nesterov: True
+    weight_decay: 5e-4
 
   loss:  # Defined in utils/deep_learning.py
     #type: CharbonnierLoss

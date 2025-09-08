@@ -3,12 +3,12 @@ dataset:
     type: PCB_dataset
 
     # for dataset
-    hr_train: ./dataset/40_e2e/train/HQ
-    lr_train: ./dataset/40_e2e/train/LQ
+    hr_train: ./dataset/40_e2e/train/SRQE
+    lr_train: ./dataset/40_e2e/train/SRQE
     label_train: ./dataset/40_e2e/train/labels
 
-    hr_val: ./dataset/40_e2e/test/HQ
-    lr_val: ./dataset/40_e2e/test/LQ
+    hr_val: ./dataset/40_e2e/test/SRQE
+    lr_val: ./dataset/40_e2e/test/SRQE
     label_val: ./dataset/40_e2e/test/labels
 
     meta_info_fp: log/log.txt
@@ -42,7 +42,7 @@ train:
   exp_name: YOLOv8_SRQE_fintune # default: timestr. None: ~
   random_seed: 7
   num_iter: 200000
-  interval_train:  2
+  interval_train:  1
   load_path: none
   best_iqe_model: exp/Enhancer_Small_ISRout_64/best_weight.pth
   best_isr_model: exp/weights/best_esr_40.pth
@@ -79,6 +79,13 @@ train:
       periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
       restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
       eta_min: !!float 1e-5
+
+  detection_optim:
+    type: SGD
+    lr: !!float 0.0005  #  #  1e-4  5e-5  # init lr of scheduler
+    momentum: 0.937
+    nesterov: True
+    weight_decay: !!float 5e-4
 
   loss:  # Defined in utils/deep_learning.py
     #type: CharbonnierLoss

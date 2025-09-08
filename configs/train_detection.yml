@@ -3,14 +3,17 @@ dataset:
     type: PCB_dataset
 
     # for dataset
-    hr_train: ./dataset/40_e2e/train/HQ
-    lr_train: ./dataset/40_e2e/train/LQ
-    hr_val: ./dataset/40_e2e/test/HQ
-    lr_val: ./dataset/40_e2e/test/LQ
+    hr_train: dataset/PCB_dataset/train/images
+    lr_train: ./dataset/40_e2e/train/SRQE
+    label_train: dataset/PCB_dataset/train/labels
+
+    hr_val: dataset/PCB_dataset/test/images
+    lr_val: ./dataset/40_e2e/test/SRQE
+    label_val: dataset/PCB_dataset/test/labels
 
     meta_info_fp: log/log.txt
 
-    imgsz: 152 # ground truth patch size: gt_size * gt_size
+    imgsz: 128 # ground truth patch size: gt_size * gt_size
     augment: True
     scale: 4
 
@@ -19,11 +22,11 @@ dataset:
 
     # for dataloader   Defined in utils/deep_learning.py
     num_worker_per_gpu: 8  # 12 in total. mainly affect IO
-    batch_size_per_gpu: 1  # bs=8, divided by 1 GPUs
+    batch_size_per_gpu: 8  # bs=8, divided by 1 GPUs
 
 comet_logging:
   using: True
-  previous_experiment: 630734e4e8564b42a43bcd45e71be0fe
+  previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
   workspace: dangdinh17
@@ -32,18 +35,18 @@ comet_logging:
 network:
   iqe_type: Enhancer_Small
   isr_type: ESR
-  detection: YOLOv8
+  detection: FasterRCNN
 
 train:
   num_gpu: 1
-  exp_name: Enhancer_Small_SRQE_64 # default: timestr. None: ~
+  exp_name: FasterRCNN_ResNet18_PCB # default: timestr. None: ~
   random_seed: 7
-  num_iter: 200000
-  interval_train:  1
-  load_path: exp/Enhancer_Small_SRQE_64/ckp_12.pth
-  best_iqe_model: exp/Enhancer_ISRout_64/best_weight.pth
+  num_iter: 300000
+  interval_train:  10
+  load_path: none
+  best_iqe_model: exp/Enhancer_Small_ISRout_64/best_weight.pth
   best_isr_model: exp/weights/best_esr_40.pth
-  best_detection_model: exp/weights/bestyolov8.pt
+  best_detection_model: None
   alpha: 0.3
   num_classes: 6
   name_classes:
@@ -53,7 +56,12 @@ train:
     3: short
     4: open_circuit
     5: spurious_copper
-
+    # - mouse_bite
+    # - spur
+    # - missing_hole
+    # - short
+    # - open_circuit
+    # - spurious_copper
   optim:
     type: Adam
     lr: !!float 1e-5  #  #  1e-4  5e-5  # init lr of scheduler
@@ -71,13 +79,13 @@ train:
       periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
       restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
       eta_min: !!float 1e-5
-  
+
   detection_optim:
     type: SGD
-    lr: !!float 0.0005  #  #  1e-4  5e-5  # init lr of scheduler
+    lr: !!float 0.005 #  #  1e-4  5e-5  # init lr of scheduler
     momentum: 0.937
     nesterov: True
-    weight_decay: 5e-4
+    weight_decay: !!float 5e-4
 
   loss:  # Defined in utils/deep_learning.py
     #type: CharbonnierLoss

@@ -3,10 +3,10 @@ dataset:
     type: PCB_dataset
 
     # for dataset
-    hr_train: ./dataset/40_ISRout/train/HQ
-    lr_train: ./dataset/40_ISRout/train/LQ_ISRout
-    hr_val: ./dataset/40_ISRout/test/HQ
-    lr_val: ./dataset/40_ISRout/test/LQ_ISRout
+    hr_train: ./dataset/40_IQE/train/HQ
+    lr_train: ./dataset/40_IQE/train/LQ
+    hr_val: ./dataset/40_IQE/test/HQ
+    lr_val: ./dataset/40_IQE/test/LQ
 
     meta_info_fp: log/log.txt
 
@@ -22,7 +22,7 @@ dataset:
     batch_size_per_gpu: 8  # bs=8, divided by 1 GPUs
 
 comet_logging:
-  using: True
+  using: False
   previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
@@ -30,13 +30,13 @@ comet_logging:
 
 
 network:
-  iqe_type: Enhancer_Small
+  iqe_type: SwinIR
   isr_type: ESR
   detection: YOLOv8
 
 train:
   num_gpu: 1
-  exp_name: Enhancer_Small_ISRout_64 # default: timestr. None: ~
+  exp_name: SwinIR_LR_64 # default: timestr. None: ~
   random_seed: 7
   num_iter: 300000
   interval_train:  10

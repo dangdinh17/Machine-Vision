@@ -7,6 +7,7 @@ from torchvision.models import *
 from torchvision.models._utils import _ovewrite_value_param, handle_legacy_interface
 from torchvision.models.detection.backbone_utils import _mobilenet_extractor, _resnet_fpn_extractor, _validate_trainable_layers
 from torchvision.models.detection.faster_rcnn import RPNHead, _default_anchorgen, FastRCNNConvFCHead
+from torchvision.models.detection.backbone_utils import BackboneWithFPN
 
 def fasterrcnn_resnet18_fpn(
 
@@ -78,3 +79,27 @@ def fasterrcnn_resnet18_fpn(
         model.load_state_dict(weights.get_state_dict(progress=progress, check_hash=True))
 
     return model
+
+def resnet18_fpn(
+
+    weights = None,
+    progress: bool = True,
+    num_classes: Optional[int] = None,
+    weights_backbone: Optional[ResNet18_Weights] = ResNet18_Weights.IMAGENET1K_V1,
+    trainable_backbone_layers: Optional[int] = None,
+) -> BackboneWithFPN:
+    
+    weights_backbone = ResNet18_Weights.verify(weights_backbone)
+
+    if weights is not None:
+        weights_backbone = None
+        num_classes = _ovewrite_value_param("num_classes", num_classes, len(weights.meta["categories"]))
+    elif num_classes is None:
+        num_classes = 91
+
+    is_trained = weights is not None or weights_backbone is not None
+    trainable_backbone_layers = _validate_trainable_layers(is_trained, trainable_backbone_layers, 5, 3)
+
+    backbone = resnet18(weights=weights_backbone, progress=progress)
+    backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers, norm_layer=nn.BatchNorm2d)
+    return backbone

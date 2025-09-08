@@ -1,5 +1,5 @@
 from .calculate_psnr_ssim import calculate_psnr_ssim, calculate_psnr
-from .loss import CharbonnierLoss
+from .loss import CharbonnierLoss, MSELoss, FPNLoss
 from .dataloader import TrainDataset, TestDataset
 from .save_checkpoint import save_checkpoint, load_checkpoint
 from .deep_learning import set_random_seed, init_dist, get_dist_info, DistSampler, create_dataloader, FFTCharbonnierLoss, PSNR
@@ -11,11 +11,11 @@ from .combined_dataloader import CombinedTestDataset, CombinedTrainDataset, comb
 from .calculate_psnr_ssim import yolo_to_xyxy, post_process
 from .yolo_dataloader import YOLOTestDataset, YOLOTrainDataset, yolo_collate_fn
 from .rcnn_dataloader import FasterRCNNTrainDataset, FasterRCNNTestDataset, rcnn_collate_fn
-from .get_faster_rcnn import fasterrcnn_resnet18_fpn
+from .get_faster_rcnn import fasterrcnn_resnet18_fpn, resnet18_fpn
 
 __all__ = [
     "calculate_psnr_ssim", "calculate_psnr",
-    "CharbonnierLoss",
+    "CharbonnierLoss", 'MSELoss', 'FPNLoss',
     "TrainDataset", "TestDataset", "CombinedTestDataset", "CombinedTrainDataset", "combined_collate_fn",
     "save_checkpoint",
     "load_checkpoint",
@@ -27,5 +27,5 @@ __all__ = [
     'yolo_to_xyxy', 'post_process',
     "YOLOTestDataset", "YOLOTrainDataset", "yolo_collate_fn", 
     'FasterRCNNTrainDataset', 'FasterRCNNTestDataset', 'rcnn_collate_fn', 
-    'fasterrcnn_resnet18_rpn', 
+    'fasterrcnn_resnet18_rpn', 'resnet18_fpn', 
 ]
