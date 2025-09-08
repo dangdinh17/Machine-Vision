@@ -4,3 +4,4 @@ torchmetrics
 pyyaml
 tqdm
 comet-ml
+ultralytics
