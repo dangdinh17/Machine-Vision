@@ -90,7 +90,7 @@ def main():
         log_dir = op.join("exp", opts_dict['train']['exp_name'])
         if not previous_experiment:
             print("log_dir", log_dir)
-            # utils.mkdir(log_dir)
+            utils.mkdir(log_dir)
         log_fp = open(opts_dict['train']['log_path'], 'a')
 
         # log all parameters
@@ -118,22 +118,20 @@ def main():
 
     # create datasets
 
-    train_dataset = utils.CombinedTrainDataset(opts_dict['dataset']['train']['lr_train'],
-                                                opts_dict['dataset']['train']['hr_train'],
-                                                opts_dict['dataset']['train']['label_train'],
-                                                opts_dict['dataset']['train']['augment']  # augment=True for training
+    train_dataset = utils.TrainDataset(opts_dict['dataset']['train']['lr_train'],
+                                        opts_dict['dataset']['train']['hr_train'],
+                                        opts_dict['dataset']['train']['imgsz'],
+                                        opts_dict['dataset']['train']['scale'],
+                                        opts_dict['dataset']['train']['augment']  # augment=True for training
     )
-        
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                                batch_size=opts_dict['dataset']['train']['batch_size_per_gpu'],
                                                shuffle=True,
-                                               collate_fn=utils.combined_collate_fn
     )
-    valid_dataset = utils.CombinedTestDataset(opts_dict['dataset']['train']['lr_val'],
-                                                opts_dict['dataset']['train']['hr_val'],
-                                                opts_dict['dataset']['train']['label_val'],
+    valid_dataset = utils.TestDataset(opts_dict['dataset']['train']['lr_val'],
+                                        opts_dict['dataset']['train']['hr_val'],
     )
-    valid_loader = torch.utils.data.DataLoader(valid_dataset, collate_fn=utils.combined_collate_fn)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset,)
     
     batch_size = opts_dict['dataset']['train']['batch_size_per_gpu'] * opts_dict['train']['num_gpu']  # divided by all GPUs
     num_iter_per_epoch = len(train_loader)

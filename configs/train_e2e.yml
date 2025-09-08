@@ -13,7 +13,7 @@ dataset:
 
     meta_info_fp: log/log.txt
 
-    imgsz: 128 # ground truth patch size: gt_size * gt_size
+    imgsz: 152 # ground truth patch size: gt_size * gt_size
     augment: True
     scale: 4
 
