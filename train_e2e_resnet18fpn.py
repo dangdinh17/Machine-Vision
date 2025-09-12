@@ -252,7 +252,7 @@ def main():
         training_timer.restart()
         # # # # fetch the first batch
         
-        for i, (lr_images, hr_images, targets) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')):
+        for i, (lr_images, hr_images) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')):
             # get data
             lr_images = lr_images.to(rank)
             hr_images = hr_images.to(rank)  # (B T C H W)s
@@ -294,7 +294,7 @@ def main():
             # metrics = DetMetrics(save_dir='.', plot=False, names=opts_dict['train']['name_classes'])  # Thay detection.names bằng tên classes
 
             pbar = tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch', leave=False)
-            for i, (lr_images, hr_images, labels) in enumerate(pbar):
+            for i, (lr_images, hr_images) in enumerate(pbar):
                 lr_images = lr_images.to(rank)
                 hr_images = hr_images.to(rank)  # (B T C H W)s
                 

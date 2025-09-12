@@ -27,5 +27,5 @@ __all__ = [
     'yolo_to_xyxy', 'post_process',
     "YOLOTestDataset", "YOLOTrainDataset", "yolo_collate_fn", 
     'FasterRCNNTrainDataset', 'FasterRCNNTestDataset', 'rcnn_collate_fn', 
-    'fasterrcnn_resnet18_rpn', 'resnet18_fpn', 
+    'fasterrcnn_resnet18_fpn', 'resnet18_fpn', 
 ]
