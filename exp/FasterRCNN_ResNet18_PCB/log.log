@@ -1,0 +1,201 @@
+<<<<<<<<<< Hello >>>>>>>>>>
+Timestamp: [20250906_033733]
+
+<<<<<<<<<< Options >>>>>>>>>>
+dataset:[
+  train:[
+    type: PCB_dataset
+    hr_train: dataset/PCB_dataset/train/images
+    lr_train: ./dataset/40_e2e/train/SRQE
+    label_train: dataset/PCB_dataset/train/labels
+    hr_val: dataset/PCB_dataset/test/images
+    lr_val: ./dataset/40_e2e/test/SRQE
+    label_val: dataset/PCB_dataset/test/labels
+    meta_info_fp: log/log.txt
+    imgsz: 128
+    augment: True
+    scale: 4
+    enlarge_ratio: 300
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 8
+    ]
+  ]
+comet_logging:[
+  api_key: mkfmxVIjacb8h74qKO6NzPdPN
+  project_name: cisr-project
+  workspace: dangdinh17
+  ]
+network:[
+  iqe_type: Enhancer_Small
+  isr_type: ESR
+  detection: FasterRCNN
+  ]
+train:[
+  num_gpu: 1
+  exp_name: FasterRCNN_ResNet18_PCB
+  random_seed: 7
+  num_iter: 300000
+  interval_train: 10
+  load_path: none
+  best_iqe_model: exp/Enhancer_Small_ISRout_64/best_weight.pth
+  best_isr_model: exp/weights/best_esr_40.pth
+  best_detection_model: None
+  alpha: 0.3
+  num_classes: 6
+  name_classes:[
+    0: mouse_bite
+    1: spur
+    2: missing_hole
+    3: short
+    4: open_circuit
+    5: spurious_copper
+    ]
+  optim:[
+    type: Adam
+    lr: 1e-05
+    betas: [0.9, 0.999]
+    eps: 1e-08
+    ]
+  scheduler:[
+    is_on: True
+    type: CosineAnnealingRestartLR
+    periods: [50000.0, 50000.0, 50000.0, 50000.0, 50000.0, 50000.0]
+    restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+    eta_min: 1e-07
+    ]
+  detection_scheduler:[
+    periods: [50000.0, 50000.0, 50000.0, 50000.0, 50000.0, 50000.0]
+    restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+    eta_min: 1e-05
+    ]
+  detection_optim:[
+    type: SGD
+    lr: 0.005
+    momentum: 0.937
+    nesterov: True
+    weight_decay: 0.0005
+    ]
+  loss:[
+    eps: 1e-06
+    type: CharbonnierLoss
+    ]
+  criterion:[
+    type: PSNR
+    unit: dB
+    ]
+  rank: 0
+  log_path: exp/FasterRCNN_ResNet18_PCB/log.log
+  checkpoint_save_path_pre: exp/FasterRCNN_ResNet18_PCB/ckp_
+  best_iqe_weight: exp/FasterRCNN_ResNet18_PCB/best_iqe_weight.pth
+  best_detection_weight: exp/FasterRCNN_ResNet18_PCB/best_detection_weight.pth
+  is_dist: False
+  ]
+opt_path: configs/train_detection.yml
+
+
+<<<<<<<<<< Dataloader >>>>>>>>>>
+total iters: [300000]
+total epochs: [282]
+iter per epoch: [1067]
+start from epoch: [0]
+
+<<<<<<<<<< Training >>>>>>>>>>
+iterator: [1067]/300000, epoch: [1]/282, lr: [49.944]x1e-4, train loss: [0.291105], val loss: [0.000000], val_map50: [0.8684] val_map50_95: [0.8684] iteration time: [753.2870] s
+> detection model saved at epoch 1
+
+> best model saved at epoch 1
+
+iterator: [2134]/300000, epoch: [2]/282, lr: [49.776]x1e-4, train loss: [0.185588], val loss: [0.000000], val_map50: [0.9416] val_map50_95: [0.9416] iteration time: [717.6347] s
+> best model saved at epoch 2
+
+iterator: [3201]/300000, epoch: [3]/282, lr: [49.497]x1e-4, train loss: [0.161292], val loss: [0.000000], val_map50: [0.9568] val_map50_95: [0.9568] iteration time: [705.0035] s
+> best model saved at epoch 3
+
+iterator: [4268]/300000, epoch: [4]/282, lr: [49.108]x1e-4, train loss: [0.148146], val loss: [0.000000], val_map50: [0.9676] val_map50_95: [0.9676] iteration time: [693.7889] s
+> best model saved at epoch 4
+
+iterator: [5335]/300000, epoch: [5]/282, lr: [48.611]x1e-4, train loss: [0.139587], val loss: [0.000000], val_map50: [0.9702] val_map50_95: [0.9702] iteration time: [697.5568] s
+> best model saved at epoch 5
+
+iterator: [6402]/300000, epoch: [6]/282, lr: [48.009]x1e-4, train loss: [0.132246], val loss: [0.000000], val_map50: [0.9764] val_map50_95: [0.9764] iteration time: [692.2271] s
+> best model saved at epoch 6
+
+iterator: [7469]/300000, epoch: [7]/282, lr: [47.303]x1e-4, train loss: [0.128072], val loss: [0.000000], val_map50: [0.9768] val_map50_95: [0.9768] iteration time: [720.2863] s
+> best model saved at epoch 7
+
+iterator: [8536]/300000, epoch: [8]/282, lr: [46.497]x1e-4, train loss: [0.128657], val loss: [0.000000], val_map50: [0.9832] val_map50_95: [0.9832] iteration time: [699.4782] s
+> best model saved at epoch 8
+
+iterator: [9603]/300000, epoch: [9]/282, lr: [45.594]x1e-4, train loss: [0.163453], val loss: [0.000000], val_map50: [0.9791] val_map50_95: [0.9791] iteration time: [717.0626] s
+iterator: [10670]/300000, epoch: [10]/282, lr: [44.600]x1e-4, train loss: [0.162536], val loss: [0.000000], val_map50: [0.9794] val_map50_95: [0.9794] iteration time: [700.5862] s
+iterator: [11737]/300000, epoch: [11]/282, lr: [43.518]x1e-4, train loss: [0.154941], val loss: [0.000000], val_map50: [0.9846] val_map50_95: [0.9846] iteration time: [690.6832] s
+> detection model saved at epoch 11
+
+> best model saved at epoch 11
+
+iterator: [12804]/300000, epoch: [12]/282, lr: [42.352]x1e-4, train loss: [0.152565], val loss: [0.000000], val_map50: [0.9850] val_map50_95: [0.9850] iteration time: [692.3069] s
+> best model saved at epoch 12
+
+iterator: [13871]/300000, epoch: [13]/282, lr: [41.109]x1e-4, train loss: [0.143320], val loss: [0.000000], val_map50: [0.9869] val_map50_95: [0.9869] iteration time: [691.2556] s
+> best model saved at epoch 13
+
+iterator: [14938]/300000, epoch: [14]/282, lr: [39.794]x1e-4, train loss: [0.135419], val loss: [0.000000], val_map50: [0.9884] val_map50_95: [0.9884] iteration time: [702.8734] s
+> best model saved at epoch 14
+
+iterator: [16005]/300000, epoch: [15]/282, lr: [38.412]x1e-4, train loss: [0.129832], val loss: [0.000000], val_map50: [0.9894] val_map50_95: [0.9894] iteration time: [704.1425] s
+> best model saved at epoch 15
+
+iterator: [17072]/300000, epoch: [16]/282, lr: [36.971]x1e-4, train loss: [0.124799], val loss: [0.000000], val_map50: [0.9850] val_map50_95: [0.9850] iteration time: [697.1783] s
+iterator: [18139]/300000, epoch: [17]/282, lr: [35.476]x1e-4, train loss: [0.120339], val loss: [0.000000], val_map50: [0.9867] val_map50_95: [0.9867] iteration time: [701.2023] s
+iterator: [19206]/300000, epoch: [18]/282, lr: [33.934]x1e-4, train loss: [0.115618], val loss: [0.000000], val_map50: [0.9847] val_map50_95: [0.9847] iteration time: [700.9277] s
+iterator: [20273]/300000, epoch: [19]/282, lr: [32.352]x1e-4, train loss: [0.110346], val loss: [0.000000], val_map50: [0.9884] val_map50_95: [0.9884] iteration time: [697.6317] s
+iterator: [21340]/300000, epoch: [20]/282, lr: [30.737]x1e-4, train loss: [0.105905], val loss: [0.000000], val_map50: [0.9875] val_map50_95: [0.9875] iteration time: [697.1136] s
+iterator: [22407]/300000, epoch: [21]/282, lr: [29.097]x1e-4, train loss: [0.102204], val loss: [0.000000], val_map50: [0.9859] val_map50_95: [0.9859] iteration time: [696.5662] s
+> detection model saved at epoch 21
+
+iterator: [23474]/300000, epoch: [22]/282, lr: [27.439]x1e-4, train loss: [0.100554], val loss: [0.000000], val_map50: [0.9863] val_map50_95: [0.9863] iteration time: [689.8384] s
+iterator: [24541]/300000, epoch: [23]/282, lr: [25.769]x1e-4, train loss: [0.095536], val loss: [0.000000], val_map50: [0.9865] val_map50_95: [0.9865] iteration time: [692.3503] s
+iterator: [25608]/300000, epoch: [24]/282, lr: [24.097]x1e-4, train loss: [0.092121], val loss: [0.000000], val_map50: [0.9860] val_map50_95: [0.9860] iteration time: [696.6408] s
+iterator: [26675]/300000, epoch: [25]/282, lr: [22.429]x1e-4, train loss: [0.088620], val loss: [0.000000], val_map50: [0.9861] val_map50_95: [0.9861] iteration time: [691.4837] s
+iterator: [27742]/300000, epoch: [26]/282, lr: [20.773]x1e-4, train loss: [0.083008], val loss: [0.000000], val_map50: [0.9880] val_map50_95: [0.9880] iteration time: [693.1408] s
+iterator: [28809]/300000, epoch: [27]/282, lr: [19.136]x1e-4, train loss: [0.078416], val loss: [0.000000], val_map50: [0.9837] val_map50_95: [0.9837] iteration time: [695.5371] s
+iterator: [29876]/300000, epoch: [28]/282, lr: [17.525]x1e-4, train loss: [0.075641], val loss: [0.000000], val_map50: [0.9878] val_map50_95: [0.9878] iteration time: [703.6583] s
+iterator: [30943]/300000, epoch: [29]/282, lr: [15.948]x1e-4, train loss: [0.072020], val loss: [0.000000], val_map50: [0.9869] val_map50_95: [0.9869] iteration time: [699.9697] s
+iterator: [32010]/300000, epoch: [30]/282, lr: [14.413]x1e-4, train loss: [0.069335], val loss: [0.000000], val_map50: [0.9864] val_map50_95: [0.9864] iteration time: [702.9077] s
+iterator: [33077]/300000, epoch: [31]/282, lr: [12.925]x1e-4, train loss: [0.065102], val loss: [0.000000], val_map50: [0.9864] val_map50_95: [0.9864] iteration time: [701.0201] s
+> detection model saved at epoch 31
+
+iterator: [34144]/300000, epoch: [32]/282, lr: [11.491]x1e-4, train loss: [0.061391], val loss: [0.000000], val_map50: [0.9876] val_map50_95: [0.9876] iteration time: [699.0667] s
+iterator: [35211]/300000, epoch: [33]/282, lr: [10.118]x1e-4, train loss: [0.057761], val loss: [0.000000], val_map50: [0.9894] val_map50_95: [0.9894] iteration time: [706.8123] s
+iterator: [36278]/300000, epoch: [34]/282, lr: [8.813]x1e-4, train loss: [0.055076], val loss: [0.000000], val_map50: [0.9862] val_map50_95: [0.9862] iteration time: [702.9910] s
+iterator: [37345]/300000, epoch: [35]/282, lr: [7.580]x1e-4, train loss: [0.051903], val loss: [0.000000], val_map50: [0.9901] val_map50_95: [0.9901] iteration time: [710.1922] s
+> best model saved at epoch 35
+
+iterator: [38412]/300000, epoch: [36]/282, lr: [6.426]x1e-4, train loss: [0.049062], val loss: [0.000000], val_map50: [0.9885] val_map50_95: [0.9885] iteration time: [787.7494] s
+iterator: [39479]/300000, epoch: [37]/282, lr: [5.356]x1e-4, train loss: [0.046386], val loss: [0.000000], val_map50: [0.9900] val_map50_95: [0.9900] iteration time: [771.9978] s
+iterator: [40546]/300000, epoch: [38]/282, lr: [4.374]x1e-4, train loss: [0.044039], val loss: [0.000000], val_map50: [0.9882] val_map50_95: [0.9882] iteration time: [720.9415] s
+iterator: [41613]/300000, epoch: [39]/282, lr: [3.485]x1e-4, train loss: [0.041875], val loss: [0.000000], val_map50: [0.9882] val_map50_95: [0.9882] iteration time: [752.1566] s
+iterator: [42680]/300000, epoch: [40]/282, lr: [2.693]x1e-4, train loss: [0.039957], val loss: [0.000000], val_map50: [0.9902] val_map50_95: [0.9902] iteration time: [766.3977] s
+> best model saved at epoch 40
+
+iterator: [43747]/300000, epoch: [41]/282, lr: [2.001]x1e-4, train loss: [0.038329], val loss: [0.000000], val_map50: [0.9902] val_map50_95: [0.9902] iteration time: [779.2457] s
+> detection model saved at epoch 41
+
+> best model saved at epoch 41
+
+iterator: [44814]/300000, epoch: [42]/282, lr: [1.413]x1e-4, train loss: [0.037512], val loss: [0.000000], val_map50: [0.9896] val_map50_95: [0.9896] iteration time: [775.8715] s
+iterator: [45881]/300000, epoch: [43]/282, lr: [0.931]x1e-4, train loss: [0.036580], val loss: [0.000000], val_map50: [0.9897] val_map50_95: [0.9897] iteration time: [778.2978] s
+iterator: [46948]/300000, epoch: [44]/282, lr: [0.557]x1e-4, train loss: [0.035982], val loss: [0.000000], val_map50: [0.9896] val_map50_95: [0.9896] iteration time: [783.3689] s
+iterator: [48015]/300000, epoch: [45]/282, lr: [0.294]x1e-4, train loss: [0.035342], val loss: [0.000000], val_map50: [0.9888] val_map50_95: [0.9888] iteration time: [819.5710] s
+iterator: [49082]/300000, epoch: [46]/282, lr: [0.141]x1e-4, train loss: [0.035236], val loss: [0.000000], val_map50: [0.9903] val_map50_95: [0.9903] iteration time: [853.5509] s
+> best model saved at epoch 46
+
+iterator: [50149]/300000, epoch: [47]/282, lr: [25.049]x1e-4, train loss: [0.037075], val loss: [0.000000], val_map50: [0.9831] val_map50_95: [0.9831] iteration time: [775.7930] s
+iterator: [51216]/300000, epoch: [48]/282, lr: [25.014]x1e-4, train loss: [0.069188], val loss: [0.000000], val_map50: [0.9874] val_map50_95: [0.9874] iteration time: [788.4786] s
+iterator: [52283]/300000, epoch: [49]/282, lr: [24.922]x1e-4, train loss: [0.080758], val loss: [0.000000], val_map50: [0.9906] val_map50_95: [0.9906] iteration time: [779.8813] s
+> best model saved at epoch 49
+
+iterator: [53350]/300000, epoch: [50]/282, lr: [24.775]x1e-4, train loss: [0.080884], val loss: [0.000000], val_map50: [0.9877] val_map50_95: [0.9877] iteration time: [791.3571] s
+iterator: [54417]/300000, epoch: [51]/282, lr: [24.573]x1e-4, train loss: [0.079971], val loss: [0.000000], val_map50: [0.9857] val_map50_95: [0.9857] iteration time: [801.4832] s
+> detection model saved at epoch 51
+
