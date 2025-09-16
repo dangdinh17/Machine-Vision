@@ -338,7 +338,7 @@ def main():
         if results['map_50'] > best_map:
             best_map = results['map_50']
             utils.save_checkpoint(detection, detection_optimizer, machine_scheduler, epoch+1, train_step, val_step, best_map, opts_dict['train']['best_detection_weight'])
-            torch.save(detection.backbone.state_dict(), os.path.dirname(opts_dict['train']['best_detection_weight']) +f'/best_backbone.pth')
+            torch.save(detection.backbone.state_dict(), os.path.dirname(opts_dict['train']['best_detection_weight']) +f'/best_backbone_weight.pth')
 
             msg = "> best model saved at epoch {:s}\n".format(str(epoch+1))
             print(msg)
