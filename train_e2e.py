@@ -92,7 +92,7 @@ def main():
         log_dir = op.join("exp", opts_dict['train']['exp_name'])
         if not previous_experiment:
             print("log_dir", log_dir)
-            # utils.mkdir(log_dir)
+            utils.mkdir(log_dir)
         log_fp = open(opts_dict['train']['log_path'], 'a')
 
         # log all parameters
