@@ -90,7 +90,7 @@ def main():
 
     if rank == 0:
         log_dir = op.join("exp", opts_dict['train']['exp_name'])
-        if not previous_experiment:
+        if not previous_experiment or not os.path.exists(log_dir):
             print("log_dir", log_dir)
             utils.mkdir(log_dir)
         log_fp = open(opts_dict['train']['log_path'], 'a')
@@ -228,7 +228,7 @@ def main():
     if op.isfile(opts_dict['train']['best_isr_model']):
         isr.load_state_dict(torch.load(opts_dict['train']['best_isr_model'])['model_state_dict'])
     
-    start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, -float('inf'), -float('inf')
+    start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, -float('inf'), -float('inf')
     if os.path.isfile(opts_dict['train']['load_path']):
         checkpoint = torch.load(opts_dict['train']['checkpoint'], map_location="cpu")
         isr.load_state_dict(checkpoint['state_dict'])

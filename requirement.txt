@@ -4,4 +4,4 @@ torchmetrics
 pyyaml
 tqdm
 comet-ml
-ultralytics
+ultralytics==8.3.99
