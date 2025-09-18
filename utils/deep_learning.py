@@ -104,7 +104,7 @@ class DistSampler(Sampler):
         self.epoch = epoch
 
 
-def create_dataloader(dataset, opts_dict, sampler=None, phase='train', seed=None):
+def create_dataloader(dataset, opts_dict, sampler=None, phase='train', seed=None, collate_fn=None):
     """Create dataloader."""
     if phase == 'train':
         # >I don't know why BasicSR have to detect `is_dist`
@@ -114,6 +114,7 @@ def create_dataloader(dataset, opts_dict, sampler=None, phase='train', seed=None
             shuffle=False,  # sampler will shuffle at train.py
             num_workers=opts_dict['dataset']['train']['num_worker_per_gpu'],
             sampler=sampler,
+            collate_fn=collate_fn,
             drop_last=True,
             pin_memory=True
         )
@@ -132,6 +133,7 @@ def create_dataloader(dataset, opts_dict, sampler=None, phase='train', seed=None
             batch_size=1,
             shuffle=False,
             num_workers=0,
+            collate_fn=collate_fn,
             pin_memory=False
         )
 
