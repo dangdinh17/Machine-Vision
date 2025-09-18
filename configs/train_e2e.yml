@@ -22,7 +22,7 @@ dataset:
 
     # for dataloader   Defined in utils/deep_learning.py
     num_worker_per_gpu: 8  # 12 in total. mainly affect IO
-    batch_size_per_gpu: 1  # bs=8, divided by 1 GPUs
+    batch_size_per_gpu: 4  # bs=8, divided by 1 GPUs
 
 comet_logging:
   using: False
@@ -31,25 +31,28 @@ comet_logging:
   project_name: cisr-project
   workspace: dangdinh17
 
+AMP: True
 
 network:
   iqe_type: Enhancer_Small
   isr_type: ESR
   detection: YOLOv8
-
+  loss_type: machine # machine / human / total
+  train_type: srqe  #sr or srqe
+  
 train:
   num_gpu: 1
-  exp_name: Enhancer_Small_e2e_FPNLoss # default: timestr. None: ~
+  exp_name: ESR_HumanLoss # default: timestr. None: ~
   random_seed: 7
-  num_iter: 200000
+  num_iter: 300000
   interval_train:  1
   load_path: None
-  load_detection: exp/Enhancer_Small_e2e_64/ckp_19_detection.pth
-  best_iqe_model: exp/Enhancer_Small_ISRout_64/best_weight.pth
-  best_isr_model: exp/weights/best_esr_40.pth
+  load_detection: None
+  best_iqe_model: None
+  best_isr_model: None
   best_detection_model: exp/weights/bestyolov8.pt
   best_backbone: exp/FasterRCNN_ResNet18_PCB/best_backbone_49.pth
-  alpha: 0.8
+  alpha: 0.2
   num_classes: 6
   name_classes:
     0: mouse_bite
@@ -66,9 +69,9 @@ train:
     # - spurious_copper
   optim:
     type: Adam
-    lr: !!float 1e-5  #  #  1e-4  5e-5  # init lr of scheduler
+    lr: !!float 1e-4  #  #  1e-4  5e-5  # init lr of scheduler
     betas: [0.9, 0.999]
-    eps: !!float 1e-08
+    eps: !!float 1e-07
 
   scheduler:
     is_on: True
