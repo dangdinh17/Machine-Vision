@@ -228,7 +228,7 @@ def main():
     if op.isfile(opts_dict['train']['best_isr_model']):
         isr.load_state_dict(torch.load(opts_dict['train']['best_isr_model'])['model_state_dict'])
     
-    start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, 0, 0
+    start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, -float('inf'), -float('inf')
     if os.path.isfile(opts_dict['train']['load_path']):
         checkpoint = torch.load(opts_dict['train']['checkpoint'], map_location="cpu")
         isr.load_state_dict(checkpoint['state_dict'])
@@ -238,8 +238,8 @@ def main():
         val_step = checkpoint['val_step']
         if 'scheduler' in checkpoint:
             human_scheduler.load_state_dict(checkpoint['scheduler'])
-        if 'num_iter_accum' in checkpoint:
-            start_epoch = checkpoint['num_iter_accum']
+        if 'start_epoch' in checkpoint:
+            start_epoch = checkpoint['start_epoch']
             print(f"Resume from epoch: {start_epoch}")
         if 'best_map' in checkpoint:
             best_map = checkpoint['best_map']
@@ -420,8 +420,8 @@ def main():
                 metrics.update(predictions, targets)
 
                 if using_comet:
-                    experiment.log_metric("val_human_loss", total_loss.item(), step=val_step)
-                    experiment.log_metric("val_machine_loss", total_loss.item(), step=val_step)
+                    experiment.log_metric("val_human_loss", human_loss.item(), step=val_step)
+                    experiment.log_metric("val_machine_loss", machine_loss.item(), step=val_step)
                     experiment.log_metric("val_total_loss", total_loss.item(), step=val_step)
                     experiment.log_metric("val_loss", loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
@@ -434,7 +434,7 @@ def main():
             experiment.log_metrics({'avg_train_loss':train_loss/len(train_loader), 'avg_val_loss':val_loss/len(valid_loader)}, step=epoch+1)
             experiment.log_metrics({'avg_train_psnr':train_psnr/len(train_loader), 'avg_val_psnr':val_psnr/len(valid_loader)}, step=epoch+1)
             experiment.log_metrics({
-                "val_map50": results['map'],
+                "val_map50": results['map_50'],
                 "val_map50_95": results['map']
             }, step=epoch+1)
 
@@ -449,9 +449,6 @@ def main():
             f'epoch: [{epoch+1}]/{num_epoch}, '
             f'lr: [{lr * 1e4:.3f}]x1e-4, ' 
             f'train loss: [{train_loss/len(train_loader):.6f}], '
-            f'train total loss: [{train_loss/len(train_loader):.6f}], '
-            f'train machine loss: [{train_loss/len(train_loader):.6f}], '
-            f'train human loss: [{train_loss/len(train_loader):.6f}], '
             f'train psnr: [{train_psnr/len(train_loader):.2f}], '
             f'val loss: [{val_loss/len(valid_loader):.6f}], '
             f'val psnr: [{val_psnr/len(valid_loader):.2f}], '
@@ -463,13 +460,13 @@ def main():
         print(msg)
         log_fp.write(msg + '\n')
         state = {
-                    'start_epoch': epoch+1,
-                    'optimizer': human_optimizer.state_dict(),
-                    'best_psnr': best_psnr,
-                    'train_step': train_step,
-                    'val_step': val_step,
-                    'best_map': best_map,
-                }
+                'start_epoch': epoch+1,
+                'optimizer': human_optimizer.state_dict(),
+                'best_psnr': best_psnr,
+                'train_step': train_step,
+                'val_step': val_step,
+                'best_map': best_map,
+            }
         if opts_dict['train']['scheduler']['is_on']:
             state['scheduler'] = human_scheduler.state_dict()
         if opts_dict['AMP']:
