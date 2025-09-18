@@ -307,8 +307,8 @@ def main():
                         enhanced = isr(lr_images)
                         enhanced = iqe(enhanced)
                         
-                pred = detection(enhanced)
-                batch = {"img": enhanced, **targets}
+                    pred = detection(enhanced)
+                    batch = {"img": enhanced, **targets}
 
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
