@@ -90,7 +90,7 @@ def main():
 
     if rank == 0:
         log_dir = op.join("exp", opts_dict['train']['exp_name'])
-        if not previous_experiment or not os.path.exists(log_dir):
+        if not os.path.exists(log_dir):
             print("log_dir", log_dir)
             utils.mkdir(log_dir)
         log_fp = open(opts_dict['train']['log_path'], 'a')
@@ -302,30 +302,31 @@ def main():
             if opts_dict['AMP']:
                 with autocast(device_type='cuda'):
                     if opts_dict['network']['train_type'] == 'sr':
-                            enhanced = isr(lr_images)
+                        enhanced = isr(lr_images)
                     elif opts_dict['network']['train_type'] == 'srqe':
                         enhanced = isr(lr_images)
                         enhanced = iqe(enhanced)
-                    pred = detection(enhanced)
-                    batch = {"img": enhanced, **targets}
+                        
+                pred = detection(enhanced)
+                batch = {"img": enhanced, **targets}
 
-                    human_loss = iqe_loss(enhanced, hr_images)
-                    machine_loss, _ = detection_loss(pred, batch)
-                    total_loss = human_loss + machine_loss.sum() * alpha
-                    if opts_dict['network']['loss_type'] == 'machine':
-                        loss = machine_loss.sum()*alpha
-                    elif opts_dict['network']['loss_type'] == 'human':
-                        loss = human_loss
-                    elif opts_dict['network']['loss_type'] == 'total':
-                        loss = total_loss
-                    human_optimizer.zero_grad()  # zero grad
-                    scaler.scale(loss).backward()
-                    scaler.step(human_optimizer)
-                    scaler.update()  # update parameters
+                human_loss = iqe_loss(enhanced, hr_images)
+                machine_loss, _ = detection_loss(pred, batch)
+                total_loss = human_loss + machine_loss.sum() * alpha
+                if opts_dict['network']['loss_type'] == 'machine':
+                    loss = machine_loss.sum()*alpha
+                elif opts_dict['network']['loss_type'] == 'human':
+                    loss = human_loss
+                elif opts_dict['network']['loss_type'] == 'total':
+                    loss = total_loss
+                human_optimizer.zero_grad()  # zero grad
+                scaler.scale(loss).backward()
+                scaler.step(human_optimizer)
+                scaler.update()  # update parameters
                     
             else:
                 if opts_dict['network']['train_type'] == 'sr':
-                        enhanced = isr(lr_images)
+                    enhanced = isr(lr_images)
                 elif opts_dict['network']['train_type'] == 'srqe':
                     enhanced = isr(lr_images)
                     enhanced = iqe(enhanced)
@@ -371,7 +372,7 @@ def main():
 
         # # # update learning rate
         isr.eval()
-        # iqe.eval()
+        iqe.eval()
         detection.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
