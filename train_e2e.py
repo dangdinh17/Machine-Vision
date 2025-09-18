@@ -421,7 +421,7 @@ def main():
 
                 if using_comet:
                     experiment.log_metric("val_human_loss", human_loss.item(), step=val_step)
-                    experiment.log_metric("val_machine_loss", machine_loss.item(), step=val_step)
+                    experiment.log_metric("val_machine_loss", machine_loss.sum().item(), step=val_step)
                     experiment.log_metric("val_total_loss", total_loss.item(), step=val_step)
                     experiment.log_metric("val_loss", loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
