@@ -311,7 +311,9 @@ def main():
                     elif opts_dict['network']['train_type'] == 'srqe':
                         enhanced = isr(lr_images)
                         enhanced = iqe(enhanced)
-                        
+                    elif opts_dict['network']['train_type'] == 'qesr':
+                        enhanced = iqe(lr_images)
+                        enhanced = isr(enhanced)    
                     pred = detection(enhanced)
                     batch = {"img": enhanced, **targets}
 
@@ -335,7 +337,7 @@ def main():
                 elif opts_dict['network']['train_type'] == 'srqe':
                     enhanced = isr(lr_images)
                     enhanced = iqe(enhanced)
-                elif opts_dict['network']['train_type'] == 'srqe':
+                elif opts_dict['network']['train_type'] == 'qesr':
                     enhanced = iqe(lr_images)
                     enhanced = isr(enhanced)
                 pred = detection(enhanced)
@@ -397,7 +399,7 @@ def main():
                 elif opts_dict['network']['train_type'] == 'srqe':
                     enhanced = isr(lr_images)
                     enhanced = iqe(enhanced)
-                elif opts_dict['network']['train_type'] == 'srqe':
+                elif opts_dict['network']['train_type'] == 'qesr':
                     enhanced = iqe(lr_images)
                     enhanced = isr(enhanced)
                 pred = detection(enhanced)    
