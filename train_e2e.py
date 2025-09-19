@@ -209,7 +209,7 @@ def main():
     # define optimizer
     if opts_dict['network']['train_type'] == 'sr':
         param = isr.parameters()
-    elif opts_dict['network']['train_type'] == 'srqe':
+    elif opts_dict['network']['train_type'] == 'srqe' or opts_dict['network']['train_type'] == 'qesr':
         param = list(isr.parameters()) + list(iqe.parameters())
     assert opts_dict['train']['optim'].pop('type') == 'Adam', "Not implemented."
     human_optimizer = optim.Adam(param, **opts_dict['train']['optim'])
