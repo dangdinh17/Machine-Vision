@@ -22,10 +22,10 @@ dataset:
 
     # for dataloader   Defined in utils/deep_learning.py
     num_worker_per_gpu: 8  # 12 in total. mainly affect IO
-    batch_size_per_gpu: 4  # bs=8, divided by 1 GPUs
+    batch_size_per_gpu: 2  # bs=8, divided by 1 GPUs
 
 comet_logging:
-  using: False
+  using: True
   previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: cisr-project
@@ -38,7 +38,7 @@ network:
   isr_type: ESR
   detection: YOLOv8
   loss_type: machine # machine / human / total
-  train_type: srqe  #sr or srqe
+  train_type: srqe  #sr or srqe or qesr
   
 train:
   num_gpu: 1
