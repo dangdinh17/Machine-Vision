@@ -233,7 +233,7 @@ def main():
     
     # load checkpoint
     start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, -float('inf'), -float('inf')
-    opts_dict['train']['load_path'] = last_path
+    # opts_dict['train']['load_path'] = last_path
     if os.path.isfile(opts_dict['train']['load_path']):
         checkpoint = torch.load(opts_dict['train']['load_path'], map_location="cpu")
         isr.load_state_dict(checkpoint['state_dict'])
