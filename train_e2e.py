@@ -47,7 +47,7 @@ def receive_arg():
     opts_dict['train']['checkpoint_save_path_pre'] = op.join("exp", opts_dict['train']['exp_name'], "ckp_")
     opts_dict['train']['best_weight'] = op.join("exp", opts_dict['train']['exp_name'], "best_weight.pth")
     opts_dict['train']['best_detection_weight'] = op.join("exp", opts_dict['train']['exp_name'], "best_detection_weight.pth")
-
+    
     # opts_dict['train']['num_gpu'] = torch.cuda.device_count()
     if opts_dict['train']['num_gpu'] > 1:
         opts_dict['train']['is_dist'] = True
@@ -66,7 +66,10 @@ def main():
     num_iter = int(opts_dict['train']['num_iter'])
     interval_train = int(opts_dict['train']['interval_train'])
     # interval_val = int(opts_dict['train']['interval_val'])
-
+    best_weight_path = op.join("exp", opts_dict['train']['exp_name'], f"best_weight.pth")
+    best_psnr_path = op.join("exp", opts_dict['train']['exp_name'], f"best_psnr_weight.pth")
+    best_map_path = op.join("exp", opts_dict['train']['exp_name'], f"best_map_weight.pth")
+    last_path = op.join("exp", opts_dict['train']['exp_name'], f"last_weight.pth")
     # ==========
     # comet logging
     # ==========
@@ -228,7 +231,9 @@ def main():
     if op.isfile(opts_dict['train']['best_isr_model']):
         isr.load_state_dict(torch.load(opts_dict['train']['best_isr_model'])['model_state_dict'])
     
+    # load checkpoint
     start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, -float('inf'), -float('inf')
+    opts_dict['train']['load_path'] = last_path
     if os.path.isfile(opts_dict['train']['load_path']):
         checkpoint = torch.load(opts_dict['train']['checkpoint'], map_location="cpu")
         isr.load_state_dict(checkpoint['state_dict'])
@@ -488,10 +493,7 @@ def main():
         checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                             f"{epoch+1}"
                             ".pth")
-        best_weight_path = op.join("exp", opts_dict['train']['exp_name'], f"best_weight.pth")
-        best_psnr_path = op.join("exp", opts_dict['train']['exp_name'], f"best_psnr_weight.pth")
-        best_map_path = op.join("exp", opts_dict['train']['exp_name'], f"best_map_weight.pth")
-        last_path = op.join("exp", opts_dict['train']['exp_name'], f"last_weight.pth")
+        
         if ((epoch % interval_train == 0) or (epoch + 1 == num_epoch)) and (rank == 0):
                 torch.save(state, checkpoint_save_path)
                 torch.save(state, last_path)
