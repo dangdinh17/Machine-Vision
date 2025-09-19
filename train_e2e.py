@@ -426,7 +426,7 @@ def main():
                     experiment.log_metric("val_total_loss", total_loss.item(), step=val_step)
                     experiment.log_metric("val_loss", loss.item(), step=val_step)
                     experiment.log_metric("val_psnr", psnr, step=val_step)
-                    if val_step % 20 == 0:
+                    if val_step % 200 == 0:
                         experiment.log_image(utils.concat_triplet_yolo_batch(lr_images, enhanced, hr_images), name="Comparison", step=val_step+1)
         
         results = metrics.compute()
@@ -485,13 +485,10 @@ def main():
         best_weight_path = op.join("exp", opts_dict['train']['exp_name'], f"best_weight.pth")
         best_psnr_path = op.join("exp", opts_dict['train']['exp_name'], f"best_psnr_weight.pth")
         best_map_path = op.join("exp", opts_dict['train']['exp_name'], f"best_map_weight.pth")
-        
+        last_path = op.join("exp", opts_dict['train']['exp_name'], f"last_weight.pth")
         if ((epoch % interval_train == 0) or (epoch + 1 == num_epoch)) and (rank == 0):
                 torch.save(state, checkpoint_save_path)
-                # utils.save_checkpoint(iqe, human_optimizer, human_scheduler, epoch+1, train_step, val_step, best_map, checkpoint_save_path)
-
-                # utils.save_checkpoint(detection, detection_optimizer, machine_scheduler, epoch+1, train_step, val_step, best_map, detection_checkpoint_save_path)
-                # log
+                torch.save(state, last_path)
                 msg = "> iqe and detection model saved at {:s}\n".format(str(epoch+1))
                 print(msg)
                 log_fp.write(msg + '\n')
