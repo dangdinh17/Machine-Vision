@@ -235,12 +235,15 @@ def main():
     start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, -float('inf'), -float('inf')
     # opts_dict['train']['load_path'] = last_path
     if os.path.isfile(opts_dict['train']['load_path']):
-        checkpoint = torch.load(opts_dict['train']['load_path'], map_location="cpu")
-        isr.load_state_dict(checkpoint['state_dict'])
+        checkpoint = torch.load(opts_dict['train']['load_path'], map_location="cpu")        
         human_optimizer.load_state_dict(checkpoint['optimizer'])
         best_psnr = checkpoint['best_psnr']
         train_step = checkpoint['train_step']
         val_step = checkpoint['val_step']
+        if 'isr' in checkpoint:
+            isr.load_state_dict(checkpoint['isr'])
+        if 'iqe' in checkpoint:
+            iqe.load_state_dict(checkpoint['iqe'])
         if 'scheduler' in checkpoint:
             human_scheduler.load_state_dict(checkpoint['scheduler'])
         if 'start_epoch' in checkpoint:
