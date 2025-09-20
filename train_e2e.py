@@ -233,7 +233,8 @@ def main():
     
     # load checkpoint
     start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, -float('inf'), -float('inf')
-    # opts_dict['train']['load_path'] = last_path
+    opts_dict['train']['load_path'] = last_path if opts_dict['train']['load_path'] is None else opts_dict['train']['load_path']
+     # None -> continue from the last checkpoint
     if os.path.isfile(opts_dict['train']['load_path']):
         checkpoint = torch.load(opts_dict['train']['load_path'], map_location="cpu")        
         human_optimizer.load_state_dict(checkpoint['optimizer'])
@@ -488,12 +489,14 @@ def main():
             state['scheduler'] = human_scheduler.state_dict()
         if opts_dict['AMP']:
             state['scaler'] = scaler.state_dict()
+
         if opts_dict['network']['train_type'] == 'sr':
             state['isr'] = isr.state_dict()
           
-        elif opts_dict['network']['train_type'] == 'srqe':
+        elif opts_dict['network']['train_type'] == 'srqe' or opts_dict['network']['train_type'] == 'qesr':
             state['iqe'] = iqe.state_dict()
             state['isr'] = isr.state_dict()
+        
             
         checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                             f"{epoch+1}"
