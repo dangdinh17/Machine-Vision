@@ -490,12 +490,8 @@ def main():
         if opts_dict['AMP']:
             state['scaler'] = scaler.state_dict()
 
-        if opts_dict['network']['train_type'] == 'sr':
-            state['isr'] = isr.state_dict()
-          
-        elif opts_dict['network']['train_type'] == 'srqe' or opts_dict['network']['train_type'] == 'qesr':
-            state['iqe'] = iqe.state_dict()
-            state['isr'] = isr.state_dict()
+        state['iqe'] = iqe.state_dict()
+        state['isr'] = isr.state_dict()
         
             
         checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
