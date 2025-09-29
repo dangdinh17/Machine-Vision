@@ -21,7 +21,7 @@ import ultralytics
 from types import SimpleNamespace
 import numpy as np
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
-from torch.amp import autocast, GradScaler
+from torch.cuda.amp import autocast, GradScaler
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -309,7 +309,7 @@ def main():
             lr_images = lr_images.to(rank)
             hr_images = hr_images.to(rank)  # (B T C H W)s
             if opts_dict['AMP']:
-                with autocast(device_type='cuda'):
+                with autocast():
                     if opts_dict['network']['train_type'] == 'sr':
                         enhanced = isr(lr_images)
                     elif opts_dict['network']['train_type'] == 'srqe':
@@ -492,7 +492,7 @@ def main():
 
         state['iqe'] = iqe.state_dict()
         state['isr'] = isr.state_dict()
-        
+    
             
         checkpoint_save_path = (f"{opts_dict['train']['checkpoint_save_path_pre']}"
                             f"{epoch+1}"
