@@ -12,6 +12,7 @@ from .calculate_psnr_ssim import yolo_to_xyxy, post_process
 from .yolo_dataloader import YOLOTestDataset, YOLOTrainDataset, yolo_collate_fn
 from .rcnn_dataloader import FasterRCNNTrainDataset, FasterRCNNTestDataset, rcnn_collate_fn
 from .get_faster_rcnn import fasterrcnn_resnet18_fpn, resnet18_fpn
+from .loss_balancing import DynamicWeightAveraging, UncertaintyWeighting
 
 __all__ = [
     "calculate_psnr_ssim", "calculate_psnr",
@@ -28,4 +29,6 @@ __all__ = [
     "YOLOTestDataset", "YOLOTrainDataset", "yolo_collate_fn", 
     'FasterRCNNTrainDataset', 'FasterRCNNTestDataset', 'rcnn_collate_fn', 
     'fasterrcnn_resnet18_fpn', 'resnet18_fpn', 
+    'DynamicWeightAveraging', 'UncertaintyWeighting',
+
 ]

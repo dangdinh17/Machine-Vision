@@ -37,9 +37,10 @@ network:
   iqe_type: Enhancer_Small
   isr_type: ESR
   detection: YOLOv8
-  loss_type: machine # machine / human / total
-  train_type: srqe  #sr or srqe or qesr
-  
+  loss_type: total   # machine / human / total
+  train_type: srqe     # sr or srqe or qesr
+  loss_balance: dwa    # dwa / uncertainty_weight / gradnorm /default
+
 train:
   num_gpu: 1
   exp_name: ESR_HumanLoss # default: timestr. None: ~
