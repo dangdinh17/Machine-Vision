@@ -338,7 +338,7 @@ def main():
                 machine_loss = machine_loss.sum()
                 total_loss = human_loss + machine_loss * alpha
                 if opts_dict['network']['loss_type'] == 'machine':
-                    loss = machine_loss*alpha
+                    loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
                     loss = human_loss
                 elif opts_dict['network']['loss_type'] == 'total':
@@ -373,7 +373,7 @@ def main():
                 machine_loss = machine_loss.sum()
                 total_loss = human_loss + machine_loss * alpha
                 if opts_dict['network']['loss_type'] == 'machine':
-                    loss = machine_loss*alpha
+                    loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
                     loss = human_loss
                 elif opts_dict['network']['loss_type'] == 'total':
@@ -446,7 +446,7 @@ def main():
                 machine_loss = machine_loss.sum()
                 total_loss = human_loss + machine_loss * alpha
                 if opts_dict['network']['loss_type'] == 'machine':
-                    loss = machine_loss*alpha
+                    loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
                     loss = human_loss
                 elif opts_dict['network']['loss_type'] == 'total':
