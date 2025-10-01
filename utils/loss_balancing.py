@@ -22,7 +22,11 @@ class UncertaintyWeighting(nn.Module):
             precision = torch.exp(-self.log_vars[i])
             total = total + 0.5 * precision * L + self.log_vars[i]
         return total
-
+    def get_weights(self) -> np.ndarray:
+        """Trả về trọng số hiện tại dưới dạng numpy array"""
+        with torch.no_grad():
+            weights = 0.5 * torch.exp(-self.log_vars)
+        return weights.cpu().numpy()
 class DynamicWeightAveraging:
     def __init__(self, num_tasks, T=2.0):
         """

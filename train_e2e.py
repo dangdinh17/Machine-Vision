@@ -313,6 +313,7 @@ def main():
         #     train_sampler.set_epoch(current_epoch)
         train_loss, train_psnr = 0, 0
         epoch_h_loss, epoch_m_loss = 0, 0
+        w_h, w_m = 0, 0
         training_timer.restart()
         # # # # fetch the first batch
         pbar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')
@@ -382,6 +383,7 @@ def main():
                         w_h, w_m = loss_balancing.get_weights()
                         loss = w_h * human_loss + w_m * machine_loss
                     elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
+                        w_h, w_m = loss_balancing.get_weights()
                         loss = loss_balancing([human_loss, machine_loss])
                     elif opts_dict['network']['loss_balance'] == 'gradnorm':
                         pass
@@ -406,7 +408,7 @@ def main():
                 mem_used = torch.cuda.memory_reserved(rank) / (1024 ** 3)
             else:
                 mem_used = 0
-            desc = f"Epoch {epoch+1}/{num_epoch:<8} GPU_mem: {mem_used:.1f}GB   Loss: {loss.item():.6f}"
+            desc = f"Epoch {epoch+1}/{num_epoch:<8} GPU_mem: {mem_used:.1f}GB   Loss: {loss.item():.6f}  Weight: [{w_h:.3f}, {w_m:.3f}]"
             pbar.set_description(desc)
 
             if using_comet:
