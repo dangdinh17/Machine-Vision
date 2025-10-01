@@ -423,6 +423,8 @@ def main():
         isr.eval()
         iqe.eval()
         detection.eval()
+        if opts_dict['network']['loss_type'] == 'total' and opts_dict['network']['loss_balance'] == 'uncertainty_weight':
+            loss_balancing.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
             metrics = MeanAveragePrecision(iou_thresholds=[x/100 for x in range(50, 100, 5)], iou_type="bbox", class_metrics=True)
