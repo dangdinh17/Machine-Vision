@@ -106,8 +106,9 @@ def main():
                 f"{utils.dict2str(opts_dict)}"
                 )
         print(msg)
-        log_fp.write(msg + '\n')
-        log_fp.flush()
+        if not os.path.exists(log_dir):
+            log_fp.write(msg + '\n')
+            log_fp.flush()
 
     # ==========
     # TO-DO: init tensorboard
