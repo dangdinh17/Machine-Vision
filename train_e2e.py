@@ -348,6 +348,7 @@ def main():
                         w_h, w_m = loss_balancing.get_weights()
                         loss = w_h * human_loss + w_m * machine_loss
                     elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
+                        w_h, w_m = loss_balancing.get_weights()
                         loss = loss_balancing([human_loss, machine_loss])
                     elif opts_dict['network']['loss_balance'] == 'gradnorm':
                         pass
@@ -459,6 +460,7 @@ def main():
                         w_h, w_m = loss_balancing.get_weights()
                         loss = w_h * human_loss + w_m * machine_loss
                     elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
+                        w_h, w_m = loss_balancing.get_weights()
                         loss = loss_balancing([human_loss, machine_loss])
                     elif opts_dict['network']['loss_balance'] == 'gradnorm':
                         pass
