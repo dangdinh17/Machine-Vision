@@ -212,13 +212,13 @@ def main():
         param = list(isr.parameters())
     elif opts_dict['network']['train_type'] == 'srqe' or opts_dict['network']['train_type'] == 'qesr':
         param = list(isr.parameters()) + list(iqe.parameters())
-    if opts_dict['train']['loss_type'] == 'total' :
-        if opts_dict['train']['loss_balance'] == 'dwa':
+    if opts_dict['network']['loss_type'] == 'total' :
+        if opts_dict['network']['loss_balance'] == 'dwa':
             loss_balancing = utils.DynamicWeightAveraging(num_tasks=2, T=2)
-        elif opts_dict['train']['loss_balance'] == 'uncertainty_weight':
+        elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
             loss_balancing = utils.UncertaintyWeighting(num_tasks=2).to(rank)
             param += list(loss_balancing.parameters())
-        elif opts_dict['train']['loss_balance'] == 'gradnorm':
+        elif opts_dict['network']['loss_balance'] == 'gradnorm':
             pass
 
     assert opts_dict['train']['optim'].pop('type') == 'Adam', "Not implemented."
@@ -264,7 +264,7 @@ def main():
             best_map = checkpoint['best_map']
         if 'amp' in checkpoint:
             scaler.load_state_dict(checkpoint['amp'])
-        if 'loss_balancing' in checkpoint and opts_dict['network']['loss_type'] == 'total' and opts_dict['train']['loss_balance'] == 'uncertainty_weight':
+        if 'loss_balancing' in checkpoint and opts_dict['network']['loss_type'] == 'total' and opts_dict['network']['loss_balance'] == 'uncertainty_weight':
             loss_balancing.load_state_dict(checkpoint['loss_balancing'])
 
     # start_epoch, train_step, val_step, best_map = utils.load_checkpoint(iqe, human_optimizer, human_scheduler, path=opts_dict['train']['load_path'])
@@ -343,12 +343,12 @@ def main():
                 elif opts_dict['network']['loss_type'] == 'human':
                     loss = human_loss
                 elif opts_dict['network']['loss_type'] == 'total':
-                    if opts_dict['train']['loss_balance'] == 'dwa':
+                    if opts_dict['network']['loss_balance'] == 'dwa':
                         w_h, w_m = loss_balancing.get_weights()
                         loss = w_h * human_loss + w_m * machine_loss
-                    elif opts_dict['train']['loss_balance'] == 'uncertainty_weight':
+                    elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
                         loss = loss_balancing([human_loss, machine_loss])
-                    elif opts_dict['train']['loss_balance'] == 'gradnorm':
+                    elif opts_dict['network']['loss_balance'] == 'gradnorm':
                         pass
                     else:
                         loss = total_loss
@@ -378,12 +378,12 @@ def main():
                 elif opts_dict['network']['loss_type'] == 'human':
                     loss = human_loss
                 elif opts_dict['network']['loss_type'] == 'total':
-                    if opts_dict['train']['loss_balance'] == 'dwa':
+                    if opts_dict['network']['loss_balance'] == 'dwa':
                         w_h, w_m = loss_balancing.get_weights()
                         loss = w_h * human_loss + w_m * machine_loss
-                    elif opts_dict['train']['loss_balance'] == 'uncertainty_weight':
+                    elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
                         loss = loss_balancing([human_loss, machine_loss])
-                    elif opts_dict['train']['loss_balance'] == 'gradnorm':
+                    elif opts_dict['network']['loss_balance'] == 'gradnorm':
                         pass
                     else:
                         loss = total_loss
@@ -415,7 +415,7 @@ def main():
                 experiment.log_metric("train_total_loss", total_loss.item(), step=train_step)
                 experiment.log_metric("train_human_loss", human_loss.item(), step=train_step)
                 experiment.log_metric("train_machine_loss", machine_loss.item(), step=train_step)
-        if opts_dict['network']['loss_type'] == 'total' and opts_dict['train']['loss_balance'] == 'dwa':
+        if opts_dict['network']['loss_type'] == 'total' and opts_dict['network']['loss_balance'] == 'dwa':
             loss_balancing.update([epoch_h_loss / len(train_loader), epoch_m_loss / len(train_loader)])
         # # # update learning rate
         isr.eval()
@@ -451,12 +451,12 @@ def main():
                 elif opts_dict['network']['loss_type'] == 'human':
                     loss = human_loss
                 elif opts_dict['network']['loss_type'] == 'total':
-                    if opts_dict['train']['loss_balance'] == 'dwa':
+                    if opts_dict['network']['loss_balance'] == 'dwa':
                         w_h, w_m = loss_balancing.get_weights()
                         loss = w_h * human_loss + w_m * machine_loss
-                    elif opts_dict['train']['loss_balance'] == 'uncertainty_weight':
+                    elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
                         loss = loss_balancing([human_loss, machine_loss])
-                    elif opts_dict['train']['loss_balance'] == 'gradnorm':
+                    elif opts_dict['network']['loss_balance'] == 'gradnorm':
                         pass
                     else:
                         loss = total_loss
@@ -530,7 +530,7 @@ def main():
             state['scheduler'] = human_scheduler.state_dict()
         if opts_dict['AMP']:
             state['scaler'] = scaler.state_dict()
-        if opts_dict['network']['loss_type'] == 'total' and opts_dict['train']['loss_balance'] == 'uncertainty_weight':
+        if opts_dict['network']['loss_type'] == 'total' and opts_dict['network']['loss_balance'] == 'uncertainty_weight':
             state['loss_balancing'] = loss_balancing.state_dict()
 
         state['iqe'] = iqe.state_dict()
