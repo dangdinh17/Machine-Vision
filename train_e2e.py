@@ -458,7 +458,7 @@ def main():
             # metrics = DetMetrics(save_dir='.', plot=False, names=opts_dict['train']['name_classes'])  # Thay detection.names bằng tên classes
             metrics.reset()
             pbar = tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch', leave=False)
-            for i, (lr_images, hr_images, labels) in enumerate(pbar):
+            for i, (lr_images, hr_images, targets) in enumerate(pbar):
                 lr_images = lr_images.to(rank)
                 hr_images = hr_images.to(rank)  # (B T C H W)s
                 
@@ -514,7 +514,7 @@ def main():
                                                            agnostic=False,
                                                            max_det=300,
                                                            nc=opts_dict['train']['num_classes'])
-                predictions, targets = utils.post_process(preds_for_metric, labels, 608, 608)             
+                predictions, targets = utils.post_process(preds_for_metric, targets, 608, 608)             
                 # print(f'pred: {predictions}\nlabels: {targets}')
 
                 metrics.update(predictions, targets)
