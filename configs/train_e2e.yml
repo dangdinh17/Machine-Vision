@@ -28,7 +28,7 @@ comet_logging:
   using: True
   previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
-  project_name: cisr-project
+  project_name: compressed-pcb
   workspace: dangdinh17
 
 AMP: True
@@ -38,12 +38,12 @@ network:
   isr_type: ESR
   detection: YOLOv8
   loss_type: total   # machine / human / total
-  train_type: srqe     # sr or srqe or qesr
-  loss_balance: dwa    # dwa / uncertainty_weight / gradnorm /default
+  train_type: sr     # sr or srqe or qesr
+  loss_balance: default    # dwa / uncertainty_weight / gradnorm / default
 
 train:
   num_gpu: 1
-  exp_name: ESR_HumanLoss # default: timestr. None: ~
+  exp_name: None # default: timestr. None: ~
   random_seed: 7
   num_iter: 300000
   interval_train:  1
@@ -53,7 +53,8 @@ train:
   best_isr_model: None
   best_detection_model: exp/weights/bestyolov8.pt
   best_backbone: exp/FasterRCNN_ResNet18_PCB/best_backbone_49.pth
-  alpha: 0.2
+  w_h: 1
+  w_m: 0.1
   num_classes: 6
   name_classes:
     0: mouse_bite

@@ -206,7 +206,6 @@ def main():
     if isinstance(detection_loss.hyp, dict):
         detection_loss.hyp = SimpleNamespace(**detection_loss.hyp)
         
-    alpha = opts_dict['train']['alpha']  # alpha for human loss
     # define optimizer
     if opts_dict['network']['train_type'] == 'sr':
         param = list(isr.parameters())
@@ -312,7 +311,10 @@ def main():
         #     train_sampler.set_epoch(current_epoch)
         train_loss, train_psnr = 0, 0
         epoch_h_loss, epoch_m_loss = 0, 0
-        w_h, w_m = 0, 0
+        if opts_dict['network']['loss_type'] == 'total' and opts_dict['network']['loss_balance'] == 'default':
+            w_h, w_m = opts_dict['train']['w_h'], opts_dict['train']['w_m']
+        else:
+            w_h, w_m = 0, 0
         training_timer.restart()
         # # # # fetch the first batch
         pbar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epoch}', unit='batch')
@@ -337,7 +339,7 @@ def main():
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
                 machine_loss = machine_loss.sum()
-                total_loss = human_loss + machine_loss * alpha
+                total_loss = human_loss * w_h + machine_loss * w_m
                 if opts_dict['network']['loss_type'] == 'machine':
                     loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
@@ -345,7 +347,7 @@ def main():
                 elif opts_dict['network']['loss_type'] == 'total':
                     if opts_dict['network']['loss_balance'] == 'dwa':
                         w_h, w_m = loss_balancing.get_weights()
-                        loss = w_h * human_loss + w_m * machine_loss
+                        loss = human_loss * w_h + machine_loss * w_m
                     elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
                         w_h, w_m = loss_balancing.get_weights()
                         loss = loss_balancing([human_loss, machine_loss])
@@ -373,7 +375,7 @@ def main():
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
                 machine_loss = machine_loss.sum()
-                total_loss = human_loss + machine_loss * alpha
+                total_loss = human_loss * w_h + machine_loss * w_m
                 if opts_dict['network']['loss_type'] == 'machine':
                     loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
@@ -381,7 +383,7 @@ def main():
                 elif opts_dict['network']['loss_type'] == 'total':
                     if opts_dict['network']['loss_balance'] == 'dwa':
                         w_h, w_m = loss_balancing.get_weights()
-                        loss = w_h * human_loss + w_m * machine_loss
+                        loss = human_loss * w_h + machine_loss * w_m
                     elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
                         w_h, w_m = loss_balancing.get_weights()
                         loss = loss_balancing([human_loss, machine_loss])
@@ -452,7 +454,7 @@ def main():
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
                 machine_loss = machine_loss.sum()
-                total_loss = human_loss + machine_loss * alpha
+                total_loss = human_loss + machine_loss * w_m
                 if opts_dict['network']['loss_type'] == 'machine':
                     loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
@@ -460,7 +462,7 @@ def main():
                 elif opts_dict['network']['loss_type'] == 'total':
                     if opts_dict['network']['loss_balance'] == 'dwa':
                         w_h, w_m = loss_balancing.get_weights()
-                        loss = w_h * human_loss + w_m * machine_loss
+                        loss = human_loss * w_h + machine_loss * w_m
                     elif opts_dict['network']['loss_balance'] == 'uncertainty_weight':
                         w_h, w_m = loss_balancing.get_weights()
                         loss = loss_balancing([human_loss, machine_loss])
