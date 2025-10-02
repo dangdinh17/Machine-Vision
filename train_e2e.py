@@ -4,6 +4,7 @@ import yaml
 import argparse
 import torch
 import torch.optim as optim
+import torch.nn as nn
 import os
 import os.path as op
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -207,8 +208,11 @@ def main():
         detection_loss.hyp = SimpleNamespace(**detection_loss.hyp)
         
     # define optimizer
+    
     if opts_dict['network']['train_type'] == 'sr':
         param = list(isr.parameters())
+    elif opts_dict['network']['train_type'] == 'qe':
+        param = list(iqe.parameters())
     elif opts_dict['network']['train_type'] == 'srqe' or opts_dict['network']['train_type'] == 'qesr':
         param = list(isr.parameters()) + list(iqe.parameters())
     if opts_dict['network']['loss_type'] == 'total' :
@@ -242,7 +246,7 @@ def main():
     
     # load checkpoint
     start_epoch, train_step, val_step, best_map, best_psnr = 0, 0, 0, -float('inf'), -float('inf')
-    opts_dict['train']['load_path'] = last_path if opts_dict['train']['load_path'] is None else opts_dict['train']['load_path']
+    opts_dict['train']['load_path'] = last_path if opts_dict['train']['load_path'] == 'None' else opts_dict['train']['load_path']
      # None -> continue from the last checkpoint
     if os.path.isfile(opts_dict['train']['load_path']):
         checkpoint = torch.load(opts_dict['train']['load_path'], map_location="cpu")        
@@ -332,9 +336,18 @@ def main():
                         enhanced = iqe(enhanced)
                     elif opts_dict['network']['train_type'] == 'qesr':
                         enhanced = iqe(lr_images)
-                        enhanced = isr(enhanced)    
-                    pred = detection(enhanced)
-                    batch = {"img": enhanced, **targets}
+                        enhanced = isr(enhanced) 
+                    elif opts_dict['network']['train_type'] == 'qe':
+                        enhanced = iqe(lr_images)
+                        
+                    if opts_dict['network']['train_type'] == 'qe':
+                        enhanced_x4 = nn.functional.interpolate(enhanced, scale_factor=4, mode='bicubic', align_corners=False)
+                        pred = detection(enhanced_x4)
+                        batch = {"img": enhanced_x4, **targets}
+                        hr_images = nn.functional.interpolate(hr_images, scale_factor=1/4, mode='bicubic', align_corners=False)
+                    else:
+                        pred = detection(enhanced)
+                        batch = {"img": enhanced, **targets}
 
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
@@ -369,8 +382,17 @@ def main():
                 elif opts_dict['network']['train_type'] == 'qesr':
                     enhanced = iqe(lr_images)
                     enhanced = isr(enhanced)
-                pred = detection(enhanced)
-                batch = {"img": enhanced, **targets}
+                elif opts_dict['network']['train_type'] == 'qe':
+                    enhanced = iqe(lr_images)
+                        
+                if opts_dict['network']['train_type'] == 'qe':
+                    enhanced_x4 = nn.functional.interpolate(enhanced, scale_factor=4, mode='bicubic', align_corners=False)
+                    pred = detection(enhanced_x4)
+                    batch = {"img": enhanced_x4, **targets}
+                    hr_images = nn.functional.interpolate(hr_images, scale_factor=1/4, mode='bicubic', align_corners=False)
+                else:
+                    pred = detection(enhanced)
+                    batch = {"img": enhanced, **targets}
 
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
@@ -448,9 +470,18 @@ def main():
                 elif opts_dict['network']['train_type'] == 'qesr':
                     enhanced = iqe(lr_images)
                     enhanced = isr(enhanced)
-                pred = detection(enhanced)    
-                batch = {"img": enhanced, **labels}
-        
+                elif opts_dict['network']['train_type'] == 'qe':
+                    enhanced = iqe(lr_images)
+                        
+                if opts_dict['network']['train_type'] == 'qe':
+                    enhanced_x4 = nn.functional.interpolate(enhanced, scale_factor=4, mode='bicubic', align_corners=False)
+                    pred = detection(enhanced_x4)
+                    batch = {"img": enhanced_x4, **targets}
+                    hr_images = nn.functional.interpolate(hr_images, scale_factor=1/4, mode='bicubic', align_corners=False)
+                else:
+                    pred = detection(enhanced)
+                    batch = {"img": enhanced, **targets}
+
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
                 machine_loss = machine_loss.sum()
@@ -555,7 +586,7 @@ def main():
         if ((epoch % interval_train == 0) or (epoch + 1 == num_epoch)) and (rank == 0):
                 torch.save(state, checkpoint_save_path)
                 torch.save(state, last_path)
-                msg = "> iqe and detection model saved at {:s}\n".format(str(epoch+1))
+                msg = "> models saved at {:s}\n".format(str(epoch+1))
                 print(msg)
                 log_fp.write(msg + '\n')
                 log_fp.flush()
