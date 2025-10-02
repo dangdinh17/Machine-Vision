@@ -296,11 +296,10 @@ def main():
 
     # Create a Timer object before training starts
     training_timer = utils.system.Timer()
-
+    metrics = MeanAveragePrecision(iou_thresholds=[x/100 for x in range(50, 100, 5)], iou_type="bbox", class_metrics=True)
     # ==========
     # start training
     # ==========
-    # print(any(p.requires_grad for p in detection.parameters()))
 
     
     # num_iter_accum = start_iter
@@ -418,6 +417,9 @@ def main():
                 experiment.log_metric("train_total_loss", total_loss.item(), step=train_step)
                 experiment.log_metric("train_human_loss", human_loss.item(), step=train_step)
                 experiment.log_metric("train_machine_loss", machine_loss.item(), step=train_step)
+                if opts_dict['network']['loss_type'] == 'total' and not opts_dict['network']['loss_balance'] == 'None':
+                    experiment.log_metric("weight_human", w_h, step=train_step)
+                    experiment.log_metric("weight_machine", w_m, step=train_step)
         if opts_dict['network']['loss_type'] == 'total' and opts_dict['network']['loss_balance'] == 'dwa':
             loss_balancing.update([epoch_h_loss / len(train_loader), epoch_m_loss / len(train_loader)])
         # # # update learning rate
@@ -428,9 +430,9 @@ def main():
             loss_balancing.eval()
         val_loss, val_psnr = 0, 0
         with torch.no_grad():
-            metrics = MeanAveragePrecision(iou_thresholds=[x/100 for x in range(50, 100, 5)], iou_type="bbox", class_metrics=True)
+            
             # metrics = DetMetrics(save_dir='.', plot=False, names=opts_dict['train']['name_classes'])  # Thay detection.names bằng tên classes
-
+            metrics.reset()
             pbar = tqdm(valid_loader, desc=f'Val Epoch {epoch+1}: ', unit='batch', leave=False)
             for i, (lr_images, hr_images, labels) in enumerate(pbar):
                 lr_images = lr_images.to(rank)
@@ -521,7 +523,8 @@ def main():
             f"val_map50_95: [{results['map']:.4f}] "
             f'iteration time: [{iteration_time:.4f}] s'
         )
-
+        if opts_dict['network']['loss_type'] == 'total' and not opts_dict['network']['loss_balance'] == 'None':
+            msg += (f' Weight loss: [{w_h:.3f}, {w_m:.3f}]')
         print(msg)
         log_fp.write(msg + '\n')
         state = {
