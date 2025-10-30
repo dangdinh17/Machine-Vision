@@ -158,14 +158,14 @@ def main():
         
     if opts_dict['network']['isr_type'] == 'ESR':
         isr = ESR()
+        
+    extra_args = {
+           'box': 7.5, 'cls': 0.5, 'dfl': 1.5,
+        }
     if opts_dict['network']['detection'] == 'YOLOv8':
         yolo = ultralytics.YOLO(opts_dict['train']['best_detection_model'])
         detection = yolo.model
         detection.requires_grad_(False)
-        # print(yolo.model)
-        extra_args = {
-           'box': 7.5, 'cls': 0.5, 'dfl': 1.5,
-        }
         detection.args.update(extra_args)
     iqe = iqe.to(rank)
     isr = isr.to(rank)
@@ -351,7 +351,12 @@ def main():
 
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
-                machine_loss = machine_loss.sum()
+                if opts_dict['network']['loss_balance'] == 'human-box':
+                    machine_loss = machine_loss[0] + machine_loss[2]
+                elif opts_dict['network']['loss_balance'] == 'human-class':
+                    machine_loss = machine_loss[1]
+                else:
+                    machine_loss = machine_loss.sum()
                 total_loss = human_loss * w_h + machine_loss * w_m
                 if opts_dict['network']['loss_type'] == 'machine':
                     loss = machine_loss
@@ -396,7 +401,12 @@ def main():
 
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
-                machine_loss = machine_loss.sum()
+                if opts_dict['network']['loss_balance'] == 'human-box':
+                    machine_loss = machine_loss[0] + machine_loss[2]
+                elif opts_dict['network']['loss_balance'] == 'human-class':
+                    machine_loss = machine_loss[1]
+                else:
+                    machine_loss = machine_loss.sum()
                 total_loss = human_loss * w_h + machine_loss * w_m
                 if opts_dict['network']['loss_type'] == 'machine':
                     loss = machine_loss
@@ -484,8 +494,13 @@ def main():
 
                 human_loss = iqe_loss(enhanced, hr_images)
                 machine_loss, _ = detection_loss(pred, batch)
-                machine_loss = machine_loss.sum()
-                total_loss = human_loss + machine_loss * w_m
+                if opts_dict['network']['loss_balance'] == 'human-box':
+                    machine_loss = machine_loss[0] + machine_loss[2]
+                elif opts_dict['network']['loss_balance'] == 'human-class':
+                    machine_loss = machine_loss[1]
+                else:
+                    machine_loss = machine_loss.sum()
+                total_loss = human_loss * w_h + machine_loss * w_m
                 if opts_dict['network']['loss_type'] == 'machine':
                     loss = machine_loss
                 elif opts_dict['network']['loss_type'] == 'human':
