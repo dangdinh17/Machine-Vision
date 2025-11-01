@@ -107,7 +107,7 @@ def main():
                 f"{utils.dict2str(opts_dict)}"
                 )
         print(msg)
-        if not os.path.exists(log_dir):
+        if not os.path.exists(best_weight_path):
             log_fp.write(msg + '\n')
             log_fp.flush()
 
