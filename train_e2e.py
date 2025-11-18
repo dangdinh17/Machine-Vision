@@ -599,7 +599,7 @@ def main():
                             ".pth")
         
         if ((epoch % interval_train == 0) or (epoch + 1 == num_epoch)) and (rank == 0):
-                torch.save(state, checkpoint_save_path)
+                # torch.save(state, checkpoint_save_path)
                 torch.save(state, last_path)
                 msg = "> models saved at {:s}\n".format(str(epoch+1))
                 print(msg)
