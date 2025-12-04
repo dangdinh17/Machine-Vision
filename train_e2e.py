@@ -153,6 +153,8 @@ def main():
         iqe = Enhancer(in_nc=3, out_nc=3,nf=40, level=2, num_blocks=[1, 2, 2])
     elif opts_dict['network']['iqe_type']=='Enhancer_Large':
         iqe = Enhancer(in_nc=3, out_nc=3,nf=64, level=2, num_blocks=[2, 4, 4])
+    elif opts_dict['network']['iqe_type']=='NAFNet':
+        iqe = NAFNet()
     else:
         iqe = SwinIR()
         

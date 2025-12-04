@@ -26,33 +26,36 @@ dataset:
 
 comet_logging:
   using: True
-  previous_experiment: 79ca693f93284db0a02c5f4881b89e68
+  previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
-  project_name: compressed-pcb
+  project_name: compressed-pcb-newdata
   workspace: dangdinh17
 
 AMP: True
 
 network:
-  iqe_type: Enhancer_Small
+  iqe_type: NAFNet
   isr_type: ESR
   detection: YOLOv8
-  loss_type: total # machine / human / total
-  train_type: srqe #sr or srqe
-  
+  machine_type: machine  # box / class / machine
+  loss_type: total   # machine / human / total
+  train_type: srqe     # sr or srqe or qesr or qe
+  loss_balance: default    # dwa / uncertainty_weight / gradnorm / default 
+
 train:
   num_gpu: 1
-  exp_name: SRQE_TotalLoss # default: timestr. None: ~
+  exp_name: SRQE_NAFNet_Total_01_Machine_QF40 # default: timestr. None: ~
   random_seed: 7
   num_iter: 300000
   interval_train:  1
-  load_path: exp/SRQE_TotalLoss/last_weight.pth
+  load_path: None
   load_detection: None
   best_iqe_model: None
   best_isr_model: None
   best_detection_model: exp/weights/bestyolov8.pt
   best_backbone: exp/FasterRCNN_ResNet18_PCB/best_backbone_49.pth
-  alpha: 0.1
+  w_h: 1
+  w_m: 0.01
   num_classes: 6
   name_classes:
     0: mouse_bite
@@ -101,5 +104,4 @@ train:
   criterion: # Defined in utils/deep_learning.py
     type: PSNR
     unit: dB
-
-
+# python train_e2e.py --opt_path configs/train_e2e_srqe.yml
