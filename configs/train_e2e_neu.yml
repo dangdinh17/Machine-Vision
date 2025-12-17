@@ -1,0 +1,110 @@
+dataset:
+  train:  # LMDB
+    type: PCB_dataset
+
+    # for dataset
+    # hr_train: ./dataset/NEU-DET_YOLO_format/images/train
+    # lr_train: ./dataset/NEU-DET_YOLO_format/images/train
+    # label_train: ./dataset/NEU-DET_YOLO_format/labels/train
+
+    # hr_val: ./dataset/NEU-DET_YOLO_format/images/val
+    # lr_val: ./dataset/NEU-DET_YOLO_format/images/val
+    # label_val: ./dataset/NEU-DET_YOLO_format/labels/val
+    hr_train: ./dataset/NEU-DET/40_e2e/train/HQ
+    lr_train: ./dataset/NEU-DET/40_e2e/train/LQ
+    label_train: ./dataset/NEU-DET/40_e2e/train/labels
+
+    hr_val: ./dataset/NEU-DET/40_e2e/val/HQ
+    lr_val: ./dataset/NEU-DET/40_e2e/val/LQ
+    label_val: ./dataset/NEU-DET/40_e2e/val/labels
+
+    meta_info_fp: log/log.txt
+
+    imgsz: 56 # ground truth patch size: gt_size * gt_size
+    augment: True
+    scale: 4
+
+    # for datasampler
+    enlarge_ratio: 300  # enlarge dataset by randomly cropping.
+
+    # for dataloader   Defined in utils/deep_learning.py
+    num_worker_per_gpu: 8  # 12 in total. mainly affect IO
+    batch_size_per_gpu: 8  # bs=8, divided by 1 GPUs
+
+comet_logging:
+  using: True
+  previous_experiment: False
+  api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
+  project_name: compressed-neu
+  workspace: dangdinh17
+
+AMP: True
+
+network:
+  iqe_type: Enhancer_Small
+  isr_type: ESR
+  detection: YOLOv8
+  machine_type: machine  # box / class / machine
+  loss_type: human   # machine / human / total
+  train_type: srqe    # sr or srqe or qesr or qe
+  loss_balance: default    # dwa / uncertainty_weight / gradnorm / default 
+
+exp: exp_neu
+
+train:
+  num_gpu: 1
+  exp_name: SRQE_Human_QF40 # default: timestr. None: ~
+  random_seed: 7
+  num_iter: 300000
+  interval_train:  1
+  load_path: None
+  load_detection: None
+  best_iqe_model: None
+  best_isr_model: None
+  best_detection_model: exp_neu/weights/neu_yolov8n.pt
+  w_h: 1
+  w_m: 0.01
+  num_classes: 6
+  name_classes:
+    0: crazing
+    1: inclusion
+    2: patches
+    3: pitted_surface
+    4: rolled-in_scale
+    5: scratches
+
+  optim:
+    type: Adam
+    lr: !!float 1e-4  #  #  1e-4  5e-5  # init lr of scheduler
+    betas: [0.9, 0.999]
+    eps: !!float 1e-07
+
+  scheduler:
+    is_on: True
+    type: CosineAnnealingRestartLR
+    periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
+    restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+    eta_min: !!float 1e-7
+
+  detection_scheduler:
+      periods: [!!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4, !!float 5e+4]  # epoch interval
+      restart_weights: [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+      eta_min: !!float 1e-5
+
+  detection_optim:
+    type: SGD
+    lr: !!float 0.0005  #  #  1e-4  5e-5  # init lr of scheduler
+    momentum: 0.937
+    nesterov: True
+    weight_decay: 5e-4
+
+  loss:  # Defined in utils/deep_learning.py
+    #type: CharbonnierLoss
+    eps: !!float 1e-6
+    type: CharbonnierLoss
+
+
+  criterion: # Defined in utils/deep_learning.py
+    type: PSNR
+    unit: dB
+

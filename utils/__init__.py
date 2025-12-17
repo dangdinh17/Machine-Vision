@@ -9,8 +9,8 @@ from .file_io import import_yuv, write_ycbcr, FileClient, dict2str, CPUPrefetche
 from .comet import concat_triplet_batch, tensor_batch_to_pil, concat_triplet_yolo_batch
 from .combined_dataloader import CombinedTestDataset, CombinedTrainDataset, combined_collate_fn
 from .calculate_psnr_ssim import yolo_to_xyxy, post_process
-from .yolo_dataloader import YOLOTestDataset, YOLOTrainDataset, yolo_collate_fn
-from .rcnn_dataloader import FasterRCNNTrainDataset, FasterRCNNTestDataset, rcnn_collate_fn
+from .yolo_dataloader import YOLOTestDataset, YOLOTrainDataset
+from .full_dataloader import FullCombinedTestDataset, FullCombinedTrainDataset
 from .get_faster_rcnn import fasterrcnn_resnet18_fpn, resnet18_fpn
 from .loss_balancing import DynamicWeightAveraging, UncertaintyWeighting
 
@@ -27,7 +27,7 @@ __all__ = [
     'concat_triplet_batch', 'tensor_batch_to_pil', 'concat_triplet_yolo_batch',
     'yolo_to_xyxy', 'post_process',
     "YOLOTestDataset", "YOLOTrainDataset", "yolo_collate_fn", 
-    'FasterRCNNTrainDataset', 'FasterRCNNTestDataset', 'rcnn_collate_fn', 
+    'FullCombinedTestDataset', 'FullCombinedTrainDataset', 
     'fasterrcnn_resnet18_fpn', 'resnet18_fpn', 
     'DynamicWeightAveraging', 'UncertaintyWeighting',
 
