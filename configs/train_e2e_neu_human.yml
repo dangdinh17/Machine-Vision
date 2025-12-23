@@ -3,17 +3,24 @@ dataset:
     type: PCB_dataset
 
     # for dataset
-    hr_train: ./dataset/40_e2e/train/HQ
-    lr_train: ./dataset/40_e2e/train/LQ
-    label_train: ./dataset/40_e2e/train/labels
+    # hr_train: ./dataset/NEU-DET_YOLO_format/images/train
+    # lr_train: ./dataset/NEU-DET_YOLO_format/images/train
+    # label_train: ./dataset/NEU-DET_YOLO_format/labels/train
 
-    hr_val: ./dataset/40_e2e/test/HQ
-    lr_val: ./dataset/40_e2e/test/LQ
-    label_val: ./dataset/40_e2e/test/labels
+    # hr_val: ./dataset/NEU-DET_YOLO_format/images/val
+    # lr_val: ./dataset/NEU-DET_YOLO_format/images/val
+    # label_val: ./dataset/NEU-DET_YOLO_format/labels/val
+    hr_train: ./dataset/NEU-DET/20_e2e/train/HQ
+    lr_train: ./dataset/NEU-DET/20_e2e/train/LQ
+    label_train: ./dataset/NEU-DET/20_e2e/train/labels
+
+    hr_val: ./dataset/NEU-DET/20_e2e/val/HQ
+    lr_val: ./dataset/NEU-DET/20_e2e/val/LQ
+    label_val: ./dataset/NEU-DET/20_e2e/val/labels
 
     meta_info_fp: log/log.txt
 
-    imgsz: 152 # ground truth patch size: gt_size * gt_size
+    imgsz: 56 # ground truth patch size: gt_size * gt_size
     augment: True
     scale: 4
 
@@ -28,23 +35,25 @@ comet_logging:
   using: True
   previous_experiment: False
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
-  project_name: compressed-pcb-newdata
+  project_name: compressed-neu
   workspace: dangdinh17
 
 AMP: True
 
 network:
-  iqe_type: NAFNet
+  iqe_type: Enhancer_Small
   isr_type: ESR
   detection: YOLOv8
   machine_type: machine  # box / class / machine
   loss_type: human   # machine / human / total
-  train_type: srqe     # sr or srqe or qesr or qe
-  loss_balance: uncertainty_weight    # dwa / uncertainty_weight / gradnorm / default 
+  train_type: qesr    # sr or srqe or qesr or qe
+  loss_balance: default    # dwa / uncertainty_weight / gradnorm / default 
+
+exp: exp_neu
 
 train:
   num_gpu: 1
-  exp_name: SRQE_NAFNet_Human_QF40 # default: timestr. None: ~
+  exp_name: QESR_NEU_Human_QF20 # default: timestr. None: ~
   random_seed: 7
   num_iter: 300000
   interval_train:  1
@@ -52,24 +61,18 @@ train:
   load_detection: None
   best_iqe_model: None
   best_isr_model: None
-  best_detection_model: exp/weights/bestyolov8.pt
-  best_backbone: exp/FasterRCNN_ResNet18_PCB/best_backbone_49.pth
+  best_detection_model: exp_neu/weights/neu_yolov8n.pt
   w_h: 1
   w_m: 0.01
   num_classes: 6
   name_classes:
-    0: mouse_bite
-    1: spur
-    2: missing_hole
-    3: short
-    4: open_circuit
-    5: spurious_copper
-    # - mouse_bite
-    # - spur
-    # - missing_hole
-    # - short
-    # - open_circuit
-    # - spurious_copper
+    0: crazing
+    1: inclusion
+    2: patches
+    3: pitted_surface
+    4: rolled-in_scale
+    5: scratches
+
   optim:
     type: Adam
     lr: !!float 1e-4  #  #  1e-4  5e-5  # init lr of scheduler
@@ -104,4 +107,4 @@ train:
   criterion: # Defined in utils/deep_learning.py
     type: PSNR
     unit: dB
-# python train_e2e.py --opt_path configs/train_e2e_srqe.yml
+

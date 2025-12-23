@@ -25,8 +25,8 @@ dataset:
     batch_size_per_gpu: 2  # bs=8, divided by 1 GPUs
 
 comet_logging:
-  using: False
-  previous_experiment: False
+  using: True
+  previous_experiment: c367489c78f145a3b52e97799787a58e
   api_key: mkfmxVIjacb8h74qKO6NzPdPN # your comet api key
   project_name: compressed-pcb-newdata
   workspace: dangdinh17
@@ -34,28 +34,28 @@ comet_logging:
 AMP: True
 
 network:
-  iqe_type: Enhancer_Small
+  iqe_type: NAFNet
   isr_type: ESR
   detection: YOLOv8
   machine_type: machine  # box / class / machine
   loss_type: total   # machine / human / total
-  train_type: qesr     # sr or srqe or qesr or qe
+  train_type: sr     # sr or srqe or qesr or qe
   loss_balance: default    # dwa / uncertainty_weight / gradnorm / default 
 
 train:
   num_gpu: 1
-  exp_name: QESR_Total_20_Machine_QF40 # default: timestr. None: ~
+  exp_name: SRQ_Total_01_Machine_QF40 # default: timestr. None: ~
   random_seed: 7
   num_iter: 300000
   interval_train:  1
   load_path: None
   load_detection: None
-  best_iqe_model: exp/QESR_Total_20_Machine_QF40/best_weight.pth
-  best_isr_model: exp/QESR_Total_20_Machine_QF40/best_weight.pth
+  best_iqe_model: None
+  best_isr_model: None
   best_detection_model: exp/weights/bestyolov8.pt
   best_backbone: exp/FasterRCNN_ResNet18_PCB/best_backbone_49.pth
   w_h: 1
-  w_m: 0.05
+  w_m: 0.01
   num_classes: 6
   name_classes:
     0: mouse_bite

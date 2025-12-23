@@ -37,14 +37,14 @@ network:
   iqe_type: NAFNet
   isr_type: ESR
   detection: YOLOv8
-  machine_type: box  # box / class / machine
+  machine_type: machine  # box / class / machine
   loss_type: total   # machine / human / total
   train_type: srqe     # sr or srqe or qesr or qe
   loss_balance: uncertainty_weight    # dwa / uncertainty_weight / gradnorm / default 
 
 train:
   num_gpu: 1
-  exp_name: SRQE_NAFNet_UW_Box_QF40 # default: timestr. None: ~
+  exp_name: SRQE_NAFNet_UW_Machine_QF40 # default: timestr. None: ~
   random_seed: 7
   num_iter: 300000
   interval_train:  1
